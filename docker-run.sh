@@ -26,8 +26,8 @@ fi
 echo "✅ Docker and Docker Compose are available"
 
 # Build and start the application
-echo "🏗️  Building LIFX Soundboard..."
-$COMPOSE_CMD build
+echo "🏗️  Pulling LIFX Soundboard image..."
+$COMPOSE_CMD pull
 
 echo "🚀 Starting LIFX Soundboard..."
 $COMPOSE_CMD up -d

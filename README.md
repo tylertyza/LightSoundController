@@ -43,9 +43,8 @@ chmod +x docker-run.sh
 # Option 2: Use Docker Compose directly
 docker-compose up -d
 
-# Option 3: Direct Docker run
-docker build -t lifx-soundboard .
-docker run -d --name lifx-soundboard -p 5000:5000 -v lifx_audio:/app/audio-files lifx-soundboard
+# Option 3: Direct Docker run from Docker Hub
+docker run -d --name lifx-soundboard -p 5000:5000 -v lifx_audio:/app/audio-files tylertyza/lightsoundcontroller:latest
 ```
 
 Open your browser and navigate to `http://localhost:5000`

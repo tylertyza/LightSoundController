@@ -201,21 +201,34 @@ server {
 
 ## Docker Hub Deployment
 
-To publish to Docker Hub:
+The LIFX Soundboard is available on Docker Hub at `tylertyza/lightsoundcontroller`.
+
+### For Users (Running from Docker Hub)
 
 ```bash
-# Build and tag
-docker build -t your-username/lifx-soundboard:latest .
-
-# Push to Docker Hub
-docker push your-username/lifx-soundboard:latest
-
-# Run from Docker Hub
+# Direct run from Docker Hub
 docker run -d \
   --name lifx-soundboard \
   -p 5000:5000 \
   -v lifx_audio:/app/audio-files \
-  your-username/lifx-soundboard:latest
+  tylertyza/lightsoundcontroller:latest
+
+# Or use Docker Compose (recommended)
+docker-compose up -d
+```
+
+### For Developers (Publishing Updates)
+
+```bash
+# Login to Docker Hub
+docker login
+
+# Build and push using the provided script
+./docker-build.sh [tag-name]
+
+# Or manually
+docker build -t tylertyza/lightsoundcontroller:latest .
+docker push tylertyza/lightsoundcontroller:latest
 ```
 
 ## Support

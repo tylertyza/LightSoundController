@@ -2,7 +2,8 @@ version: '3.8'
 
 services:
   lifx-soundboard:
-    build: .
+    image: tylertyza/lightsoundcontroller:latest
+    # build: .  # Uncomment for local development
     ports:
       - "5000:5000"
     volumes:
