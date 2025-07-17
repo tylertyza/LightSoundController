@@ -1,0 +1,357 @@
+import { createSocket, Socket } from 'dgram';
+import { EventEmitter } from 'events';
+import { Device } from '@shared/schema';
+
+interface LifxPacket {
+  size: number;
+  protocol: number;
+  addressable: boolean;
+  tagged: boolean;
+  origin: number;
+  source: number;
+  target: string;
+  ackRequired: boolean;
+  resRequired: boolean;
+  sequence: number;
+  type: number;
+  payload: Buffer;
+}
+
+interface ColorHSBK {
+  hue: number;
+  saturation: number;
+  brightness: number;
+  kelvin: number;
+}
+
+export class LifxUDPService extends EventEmitter {
+  private socket: Socket;
+  private readonly port = 56700;
+  private readonly broadcastAddress = '255.255.255.255';
+  private sequence = 0;
+  private source: number;
+  private discoveredDevices: Map<string, Device> = new Map();
+
+  constructor() {
+    super();
+    this.socket = createSocket('udp4');
+    this.source = Math.floor(Math.random() * 0xFFFFFFFF);
+    this.setupSocket();
+  }
+
+  private setupSocket() {
+    this.socket.on('message', (msg, rinfo) => {
+      try {
+        const packet = this.parsePacket(msg);
+        this.handlePacket(packet, rinfo);
+      } catch (error) {
+        console.error('Error parsing LIFX packet:', error);
+      }
+    });
+
+    this.socket.on('error', (error) => {
+      console.error('UDP socket error:', error);
+      this.emit('error', error);
+    });
+
+    this.socket.bind(() => {
+      this.socket.setBroadcast(true);
+      console.log('LIFX UDP service listening on port', this.port);
+    });
+  }
+
+  private parsePacket(buffer: Buffer): LifxPacket {
+    if (buffer.length < 36) {
+      throw new Error('Packet too short');
+    }
+
+    const size = buffer.readUInt16LE(0);
+    const frameHeader = buffer.readUInt16LE(2);
+    const protocol = (frameHeader & 0x0FFF);
+    const addressable = !!(frameHeader & 0x1000);
+    const tagged = !!(frameHeader & 0x2000);
+    const origin = (frameHeader & 0xC000) >> 14;
+    const source = buffer.readUInt32LE(4);
+    
+    const target = buffer.subarray(8, 16).toString('hex');
+    const frameAddress = buffer.readUInt16LE(22);
+    const ackRequired = !!(frameAddress & 0x0002);
+    const resRequired = !!(frameAddress & 0x0001);
+    const sequence = buffer.readUInt8(23);
+    
+    const type = buffer.readUInt16LE(32);
+    const payload = buffer.subarray(36);
+
+    return {
+      size,
+      protocol,
+      addressable,
+      tagged,
+      origin,
+      source,
+      target,
+      ackRequired,
+      resRequired,
+      sequence,
+      type,
+      payload
+    };
+  }
+
+  private handlePacket(packet: LifxPacket, rinfo: any) {
+    switch (packet.type) {
+      case 3: // StateService
+        this.handleStateService(packet, rinfo);
+        break;
+      case 22: // StatePower
+        this.handleStatePower(packet, rinfo);
+        break;
+      case 107: // LightState
+        this.handleLightState(packet, rinfo);
+        break;
+      case 25: // StateLabel
+        this.handleStateLabel(packet, rinfo);
+        break;
+      default:
+        console.log('Unknown packet type:', packet.type);
+    }
+  }
+
+  private handleStateService(packet: LifxPacket, rinfo: any) {
+    const service = packet.payload.readUInt8(0);
+    const port = packet.payload.readUInt32LE(1);
+    
+    if (service === 1 && port === 56700) {
+      console.log('Discovered LIFX device:', packet.target, 'at', rinfo.address);
+      this.requestDeviceLabel(packet.target, rinfo.address);
+    }
+  }
+
+  private handleStatePower(packet: LifxPacket, rinfo: any) {
+    const power = packet.payload.readUInt16LE(0) > 0;
+    const deviceId = packet.target;
+    
+    this.emit('device_power_update', { deviceId, power, ip: rinfo.address });
+  }
+
+  private handleLightState(packet: LifxPacket, rinfo: any) {
+    const hue = packet.payload.readUInt16LE(0);
+    const saturation = packet.payload.readUInt16LE(2);
+    const brightness = packet.payload.readUInt16LE(4);
+    const kelvin = packet.payload.readUInt16LE(6);
+    const power = packet.payload.readUInt16LE(10) > 0;
+    
+    const deviceId = packet.target;
+    
+    this.emit('device_state_update', {
+      deviceId,
+      ip: rinfo.address,
+      power,
+      color: { hue, saturation, brightness, kelvin },
+      brightness: Math.round((brightness / 65535) * 100),
+      temperature: kelvin
+    });
+  }
+
+  private handleStateLabel(packet: LifxPacket, rinfo: any) {
+    const label = packet.payload.toString('utf8').replace(/\0/g, '');
+    const deviceId = packet.target;
+    
+    // Request device type and other info
+    this.requestDevicePower(deviceId, rinfo.address);
+    this.requestLightState(deviceId, rinfo.address);
+    
+    this.emit('device_discovered', {
+      mac: deviceId,
+      ip: rinfo.address,
+      label: label || 'LIFX Device',
+      deviceType: 'LIFX Device',
+      isOnline: true,
+      lastSeen: new Date().toISOString(),
+      power: false,
+      brightness: 100,
+      temperature: 3500
+    });
+  }
+
+  private createPacket(type: number, payload: Buffer = Buffer.alloc(0), target: string = '000000000000', tagged: boolean = false): Buffer {
+    const size = 36 + payload.length;
+    const buffer = Buffer.alloc(size);
+    
+    // Frame
+    buffer.writeUInt16LE(size, 0);
+    buffer.writeUInt16LE(1024 | (tagged ? 0x2000 : 0) | 0x1000, 2); // protocol | tagged | addressable
+    buffer.writeUInt32LE(this.source, 4);
+    
+    // Frame Address
+    Buffer.from(target.padEnd(16, '0'), 'hex').copy(buffer, 8);
+    buffer.writeUInt16LE(0x0001, 22); // res_required
+    buffer.writeUInt8(this.getNextSequence(), 23);
+    
+    // Protocol Header
+    buffer.writeUInt16LE(type, 32);
+    
+    // Payload
+    payload.copy(buffer, 36);
+    
+    return buffer;
+  }
+
+  private getNextSequence(): number {
+    this.sequence = (this.sequence + 1) % 256;
+    return this.sequence;
+  }
+
+  private sendPacket(packet: Buffer, address: string = this.broadcastAddress) {
+    this.socket.send(packet, this.port, address, (error) => {
+      if (error) {
+        console.error('Error sending packet:', error);
+      }
+    });
+  }
+
+  public discoverDevices() {
+    console.log('Starting device discovery...');
+    const packet = this.createPacket(2, Buffer.alloc(0), '000000000000', true); // GetService
+    this.sendPacket(packet);
+    
+    // Send discovery packets to common IP ranges
+    for (let i = 1; i <= 254; i++) {
+      const ip = `192.168.1.${i}`;
+      this.sendPacket(packet, ip);
+    }
+  }
+
+  private requestDeviceLabel(target: string, address: string) {
+    const packet = this.createPacket(23, Buffer.alloc(0), target); // GetLabel
+    this.sendPacket(packet, address);
+  }
+
+  private requestDevicePower(target: string, address: string) {
+    const packet = this.createPacket(20, Buffer.alloc(0), target); // GetPower
+    this.sendPacket(packet, address);
+  }
+
+  private requestLightState(target: string, address: string) {
+    const packet = this.createPacket(101, Buffer.alloc(0), target); // GetColor
+    this.sendPacket(packet, address);
+  }
+
+  public setPower(target: string, address: string, power: boolean) {
+    const payload = Buffer.alloc(2);
+    payload.writeUInt16LE(power ? 65535 : 0, 0);
+    const packet = this.createPacket(21, payload, target); // SetPower
+    this.sendPacket(packet, address);
+  }
+
+  public setColor(target: string, address: string, color: ColorHSBK, duration: number = 0) {
+    const payload = Buffer.alloc(13);
+    payload.writeUInt8(0, 0); // reserved
+    payload.writeUInt16LE(color.hue, 1);
+    payload.writeUInt16LE(color.saturation, 3);
+    payload.writeUInt16LE(color.brightness, 5);
+    payload.writeUInt16LE(color.kelvin, 7);
+    payload.writeUInt32LE(duration, 9);
+    
+    const packet = this.createPacket(102, payload, target); // SetColor
+    this.sendPacket(packet, address);
+  }
+
+  public setBrightness(target: string, address: string, brightness: number, duration: number = 0) {
+    const payload = Buffer.alloc(6);
+    payload.writeUInt16LE(Math.round((brightness / 100) * 65535), 0);
+    payload.writeUInt32LE(duration, 2);
+    
+    const packet = this.createPacket(119, payload, target); // SetLightPower
+    this.sendPacket(packet, address);
+  }
+
+  public triggerEffect(target: string, address: string, effectType: string, duration: number = 1000) {
+    switch (effectType) {
+      case 'flash':
+        this.flashEffect(target, address, duration);
+        break;
+      case 'strobe':
+        this.strobeEffect(target, address, duration);
+        break;
+      case 'fade':
+        this.fadeEffect(target, address, duration);
+        break;
+      case 'breathe':
+        this.breatheEffect(target, address, duration);
+        break;
+      case 'cycle':
+        this.cycleEffect(target, address, duration);
+        break;
+    }
+  }
+
+  private flashEffect(target: string, address: string, duration: number) {
+    // Quick flash to white and back
+    this.setColor(target, address, { hue: 0, saturation: 0, brightness: 65535, kelvin: 6500 }, 0);
+    setTimeout(() => {
+      this.setColor(target, address, { hue: 0, saturation: 0, brightness: 32768, kelvin: 3500 }, 500);
+    }, duration);
+  }
+
+  private strobeEffect(target: string, address: string, duration: number) {
+    const interval = 100;
+    const cycles = Math.floor(duration / (interval * 2));
+    
+    for (let i = 0; i < cycles; i++) {
+      setTimeout(() => {
+        this.setColor(target, address, { hue: 0, saturation: 0, brightness: 65535, kelvin: 6500 }, 0);
+      }, i * interval * 2);
+      
+      setTimeout(() => {
+        this.setColor(target, address, { hue: 0, saturation: 0, brightness: 0, kelvin: 3500 }, 0);
+      }, (i * interval * 2) + interval);
+    }
+  }
+
+  private fadeEffect(target: string, address: string, duration: number) {
+    const steps = 20;
+    const stepDuration = duration / steps;
+    
+    for (let i = 0; i <= steps; i++) {
+      setTimeout(() => {
+        const brightness = Math.round((i / steps) * 65535);
+        this.setColor(target, address, { hue: 0, saturation: 0, brightness, kelvin: 3500 }, stepDuration);
+      }, i * stepDuration);
+    }
+  }
+
+  private breatheEffect(target: string, address: string, duration: number) {
+    const halfDuration = duration / 2;
+    
+    // Fade in
+    this.setColor(target, address, { hue: 0, saturation: 0, brightness: 65535, kelvin: 3500 }, halfDuration);
+    
+    // Fade out
+    setTimeout(() => {
+      this.setColor(target, address, { hue: 0, saturation: 0, brightness: 16384, kelvin: 3500 }, halfDuration);
+    }, halfDuration);
+  }
+
+  private cycleEffect(target: string, address: string, duration: number) {
+    const colors = [
+      { hue: 0, saturation: 65535, brightness: 65535, kelvin: 3500 },     // Red
+      { hue: 21845, saturation: 65535, brightness: 65535, kelvin: 3500 }, // Green
+      { hue: 43690, saturation: 65535, brightness: 65535, kelvin: 3500 }, // Blue
+      { hue: 10922, saturation: 65535, brightness: 65535, kelvin: 3500 }, // Yellow
+      { hue: 54613, saturation: 65535, brightness: 65535, kelvin: 3500 }, // Purple
+    ];
+    
+    const stepDuration = duration / colors.length;
+    
+    colors.forEach((color, index) => {
+      setTimeout(() => {
+        this.setColor(target, address, color, stepDuration);
+      }, index * stepDuration);
+    });
+  }
+
+  public close() {
+    this.socket.close();
+  }
+}

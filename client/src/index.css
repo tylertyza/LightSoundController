@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(222, 84%, 4.9%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215, 16%, 46.9%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 84%, 4.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 4.9%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --primary: hsl(221, 83%, 53%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(210, 40%, 96%);
+  --secondary-foreground: hsl(222, 84%, 4.9%);
+  --accent: hsl(210, 40%, 96%);
+  --accent-foreground: hsl(222, 84%, 4.9%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(222, 84%, 4.9%);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(222, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217, 32%, 17%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --popover: hsl(222, 84%, 4.9%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(222, 84%, 4.9%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217, 32%, 17%);
+  --input: hsl(217, 32%, 17%);
+  --primary: hsl(221, 83%, 53%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(217, 32%, 17%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(217, 32%, 17%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 63%, 31%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(216, 12%, 84%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom styles for the soundboard */
+.slider {
+  background: linear-gradient(to right, hsl(221, 83%, 53%) 0%, hsl(221, 83%, 53%) 80%, hsl(215, 20%, 65%) 80%, hsl(215, 20%, 65%) 100%);
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: hsl(221, 83%, 53%);
+  cursor: pointer;
+  border: 2px solid hsl(222, 84%, 4.9%);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: hsl(221, 83%, 53%);
+  cursor: pointer;
+  border: 2px solid hsl(222, 84%, 4.9%);
+}
+
+/* Glow effect for active buttons */
+.sound-button-active {
+  box-shadow: 0 0 20px hsla(221, 83%, 53%, 0.5);
+  transform: scale(1.05);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .w-80 {
+    width: 100%;
+    position: fixed;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .w-80.active {
+    transform: translateX(0);
+  }
+}
+
+/* Dark theme colors for slate variants */
+.bg-slate-900 {
+  background-color: hsl(222, 84%, 4.9%);
+}
+
+.bg-slate-800 {
+  background-color: hsl(215, 28%, 17%);
+}
+
+.bg-slate-700 {
+  background-color: hsl(215, 20%, 25%);
+}
+
+.bg-slate-600 {
+  background-color: hsl(215, 16%, 47%);
+}
+
+.text-slate-300 {
+  color: hsl(212, 13%, 65%);
+}
+
+.text-slate-400 {
+  color: hsl(215, 16%, 47%);
+}
+
+.text-slate-500 {
+  color: hsl(215, 20%, 35%);
+}
+
+.text-slate-600 {
+  color: hsl(215, 28%, 17%);
+}
+
+.border-slate-600 {
+  border-color: hsl(215, 16%, 47%);
+}
+
+.border-slate-700 {
+  border-color: hsl(215, 20%, 25%);
+}
+
+/* Custom focus styles */
+.focus\:border-blue-500:focus {
+  border-color: hsl(221, 83%, 53%);
+}
+
+.focus\:outline-none:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Animation for pulse effect */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(215, 28%, 17%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(215, 16%, 47%);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(215, 20%, 65%);
+}
