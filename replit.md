@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application that provides a unified interface for controlling LIFX smart lights and managing sound effects. The application serves as a soundboard with integrated lighting controls, allowing users to trigger audio playback with synchronized lighting effects. It features real-time device discovery, WebSocket communication for live updates, and a modern React-based user interface.
+This is a full-stack web application that provides a unified interface for controlling LIFX smart lights and managing sound effects. The application serves as a soundboard with integrated lighting controls, allowing users to trigger audio playbook with synchronized lighting effects. It features real-time device discovery, WebSocket communication for live updates, collapsible panels for better UI management, and a modern React-based user interface with dark theme.
 
 ## User Preferences
 
@@ -45,10 +45,11 @@ Preferred communication style: Simple, everyday language.
 - **WebSocket Handler**: Real-time bidirectional communication for device updates
 
 ### Frontend Components
-- **Soundboard Grid**: Interactive grid of sound effect buttons
-- **Device Management**: LIFX device discovery and control interface
-- **Lighting Controls**: Color, brightness, and effect management
+- **Soundboard Grid**: Interactive grid of sound effect buttons with color-coded themes
+- **Device Management**: LIFX device discovery and control interface (collapsible)
+- **Lighting Controls**: Color, brightness, and effect management (collapsible)
 - **Audio Upload Modal**: File upload and sound button configuration
+- **Collapsible Panels**: Smooth animations for hiding/showing side panels
 
 ## Data Flow
 
