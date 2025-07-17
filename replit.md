@@ -8,6 +8,12 @@ This is a full-stack web application that provides a unified interface for contr
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **Docker Deployment Support** (July 17, 2025): Added complete Docker containerization with multi-stage builds, health checks, and deployment scripts
+- **Collapsible Panels Feature**: Implemented smooth animations for hiding/showing device management and lighting control panels
+- **Git Repository Preparation**: Created comprehensive README.md and proper .gitignore for version control
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -90,6 +96,13 @@ Preferred communication style: Simple, everyday language.
 - **Backend**: esbuild compiles TypeScript server code to `dist/index.js`
 - **Static Assets**: Express serves built frontend files in production
 - **Database**: Drizzle migrations handle schema changes
+
+### Docker Deployment
+- **Multi-stage Build**: Optimized production Docker image with minimal footprint
+- **Health Checks**: Container monitoring for application availability
+- **Volume Persistence**: Audio files stored in Docker volumes
+- **Network Configuration**: UDP broadcast support for LIFX device discovery
+- **Security**: Non-root user execution with proper file permissions
 
 ### Key Architectural Decisions
 

@@ -31,12 +31,35 @@ A React-based web application that creates a unified interface for controlling L
 
 ## Getting Started
 
-### Prerequisites
+### Quick Start with Docker (Recommended)
+
+The easiest way to run the LIFX Soundboard is using Docker:
+
+```bash
+# Option 1: Use the quick start script
+chmod +x docker-run.sh
+./docker-run.sh
+
+# Option 2: Use Docker Compose directly
+docker-compose up -d
+
+# Option 3: Direct Docker run
+docker build -t lifx-soundboard .
+docker run -d --name lifx-soundboard -p 5000:5000 -v lifx_audio:/app/audio-files lifx-soundboard
+```
+
+Open your browser and navigate to `http://localhost:5000`
+
+### Development Setup
+
+For development or if you prefer not to use Docker:
+
+#### Prerequisites
 - Node.js 20 or higher
 - LIFX smart lights on your local network
 - Modern web browser with Web Audio API support
 
-### Installation
+#### Installation
 
 1. Clone the repository:
 ```bash
@@ -107,6 +130,26 @@ The application communicates directly with LIFX devices using the UDP LAN protoc
 - **LIFX UDP Service**: Device discovery and control
 - **Audio Storage**: File upload and management
 - **WebSocket Handler**: Real-time client updates
+
+## Docker Deployment
+
+For detailed Docker deployment instructions, including network configuration and troubleshooting, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Quick Docker Commands
+
+```bash
+# Start application
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop application
+docker-compose down
+
+# Update and restart
+docker-compose pull && docker-compose up -d
+```
 
 ## Contributing
 
