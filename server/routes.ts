@@ -46,6 +46,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
   
+  // Helper function to convert hex color to HSB
+  function hexToHsb(hex: string): { hue: number; saturation: number; brightness: number } {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const diff = max - min;
+    
+    let hue = 0;
+    if (diff !== 0) {
+      if (max === r) {
+        hue = ((g - b) / diff) % 6;
+      } else if (max === g) {
+        hue = (b - r) / diff + 2;
+      } else {
+        hue = (r - g) / diff + 4;
+      }
+    }
+    hue = Math.round(hue * 60);
+    if (hue < 0) hue += 360;
+    
+    const saturation = max === 0 ? 0 : diff / max;
+    const brightness = max;
+    
+    return {
+      hue: Math.round(hue / 360 * 65535),
+      saturation: Math.round(saturation * 65535),
+      brightness: Math.round(brightness * 65535)
+    };
+  }
+
+  // Helper function to apply custom JSON lighting effects
+  async function applyCustomEffect(customEffect: any, devices: any[]) {
+    try {
+      console.log('Applying custom effect:', customEffect.name);
+      
+      // Create a map of device IDs to device objects for quick lookup
+      const deviceMap = new Map();
+      devices.forEach(device => {
+        deviceMap.set(device.id.toString(), device);
+      });
+
+      // Apply global delay if specified
+      if (customEffect.globalDelay > 0) {
+        await new Promise(resolve => setTimeout(resolve, customEffect.globalDelay));
+      }
+
+      // Function to execute a single step
+      const executeStep = async (step: any) => {
+        const targetDevices = step.deviceIds
+          .map((id: string) => deviceMap.get(id))
+          .filter(Boolean);
+
+        if (targetDevices.length === 0) {
+          console.log('No target devices found for step');
+          return;
+        }
+
+        // Apply easing if specified
+        if (step.easing && step.easing.duration > 0) {
+          // For simplicity, we'll just add the easing duration to the step
+          // In a full implementation, you'd implement actual easing curves
+          await new Promise(resolve => setTimeout(resolve, step.easing.duration));
+        }
+
+        // Convert hex color to HSB
+        const color = hexToHsb(step.color);
+        
+        // Apply to all target devices
+        targetDevices.forEach(device => {
+          lifxService.setColor(device.mac, device.ip, {
+            hue: color.hue,
+            saturation: color.saturation,
+            brightness: Math.round(step.brightness / 100 * 65535),
+            kelvin: 3500 // Default temperature
+          });
+        });
+
+        // Wait for the step duration
+        await new Promise(resolve => setTimeout(resolve, step.duration));
+      };
+
+      // Execute steps in sequence
+      const executeSequence = async () => {
+        for (const step of customEffect.steps) {
+          await executeStep(step);
+        }
+      };
+
+      // Handle looping
+      if (customEffect.loop) {
+        const loopCount = customEffect.loopCount || 1;
+        for (let i = 0; i < loopCount; i++) {
+          await executeSequence();
+        }
+      } else {
+        await executeSequence();
+      }
+
+      console.log('Custom effect completed');
+    } catch (error) {
+      console.error('Error applying custom effect:', error);
+    }
+  }
+
   // Handle WebSocket messages
   function handleWebSocketMessage(ws: WebSocket, message: any) {
     switch (message.type) {
@@ -259,9 +366,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/sound-buttons', upload.single('audioFile'), async (req, res) => {
+  app.post('/api/sound-buttons', upload.single('audio'), async (req, res) => {
     try {
-      const { name, description, lightEffect, color, icon } = req.body;
+      const { name, description, lightEffect, color, icon, targetDevices } = req.body;
       const audioFile = req.file;
       
       if (!audioFile) {
@@ -277,7 +384,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         audioFile: filename,
         lightEffect,
         color,
-        icon
+        icon,
+        targetDevices: targetDevices ? JSON.parse(targetDevices) : []
       };
       
       const validatedData = insertSoundButtonSchema.parse(buttonData);
@@ -364,23 +472,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const devices = await storage.getDevices();
       const onlineDevices = devices.filter(d => d.isOnline);
       
-      // Apply scene configuration to all devices
-      onlineDevices.forEach(device => {
-        const config = scene.configuration as any;
-        if (config.brightness !== undefined) {
-          lifxService.setBrightness(device.mac, device.ip, config.brightness);
-        }
-        if (config.temperature !== undefined) {
-          lifxService.setColor(device.mac, device.ip, {
-            hue: 0,
-            saturation: 0,
-            brightness: Math.round((config.brightness || 100) / 100 * 65535),
-            kelvin: config.temperature
-          });
-        }
-      });
+      // Filter devices based on targetDevices if specified
+      const targetDevices = scene.targetDevices && scene.targetDevices.length > 0
+        ? onlineDevices.filter(d => scene.targetDevices!.includes(d.id.toString()))
+        : onlineDevices.filter(d => d.isAdopted);
       
-      broadcast({ type: 'scene_applied', payload: { sceneId, devices: onlineDevices.map(d => d.id) } });
+      const config = scene.configuration as any;
+      
+      // Check if this is a custom JSON effect
+      if (config.type === 'custom' && (scene as any).customJson) {
+        await applyCustomEffect((scene as any).customJson, targetDevices);
+      } else {
+        // Apply preset scene configuration
+        targetDevices.forEach(device => {
+          if (config.brightness !== undefined) {
+            lifxService.setBrightness(device.mac, device.ip, config.brightness);
+          }
+          if (config.temperature !== undefined) {
+            lifxService.setColor(device.mac, device.ip, {
+              hue: 0,
+              saturation: 0,
+              brightness: Math.round((config.brightness || 100) / 100 * 65535),
+              kelvin: config.temperature
+            });
+          }
+          if (config.color) {
+            const color = hexToHsb(config.color);
+            lifxService.setColor(device.mac, device.ip, {
+              hue: color.hue,
+              saturation: color.saturation,
+              brightness: Math.round((config.brightness || 100) / 100 * 65535),
+              kelvin: config.temperature || 3500
+            });
+          }
+        });
+      }
+      
+      broadcast({ type: 'scene_applied', payload: { sceneId, devices: targetDevices.map(d => d.id) } });
       res.json({ message: 'Scene applied successfully' });
     } catch (error) {
       res.status(500).json({ error: 'Failed to apply scene' });

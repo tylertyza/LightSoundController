@@ -3,13 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import DeviceManagement from "@/components/device-management";
 import LightingControls from "@/components/lighting-controls";
 import SoundboardGrid from "@/components/soundboard-grid";
-import AudioUploadModal from "@/components/audio-upload-modal";
+import { AddEffectModal } from "@/components/add-effect-modal";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAudio } from "@/hooks/use-audio";
 import { Device, SoundButton, Scene, WebSocketMessage } from "@shared/schema";
 
 export default function Soundboard() {
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isAddEffectModalOpen, setIsAddEffectModalOpen] = useState(false);
   const [globalVolume, setGlobalVolume] = useState(0.8);
   const [connectedDevices, setConnectedDevices] = useState<Device[]>([]);
   const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(true);
@@ -123,17 +123,57 @@ export default function Soundboard() {
     setGlobalVolume(volume);
   };
   
-  const handleAddSoundButton = () => {
-    setIsUploadModalOpen(true);
+  const handleAddEffect = () => {
+    setIsAddEffectModalOpen(true);
   };
   
   const handleModalClose = () => {
-    setIsUploadModalOpen(false);
+    setIsAddEffectModalOpen(false);
   };
   
-  const handleSoundSave = () => {
-    setIsUploadModalOpen(false);
-    refetchSoundButtons();
+  const handleSoundSave = async (soundData: any) => {
+    try {
+      const formData = new FormData();
+      formData.append('name', soundData.name);
+      formData.append('description', soundData.description || '');
+      formData.append('color', soundData.color);
+      formData.append('icon', soundData.icon);
+      formData.append('lightEffect', soundData.lightEffect);
+      formData.append('targetDevices', JSON.stringify(soundData.targetDevices));
+      formData.append('audio', soundData.audioFile);
+
+      const response = await fetch('/api/sound-buttons', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        refetchSoundButtons();
+        setIsAddEffectModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Error saving sound:', error);
+    }
+  };
+
+  const handleSceneSave = async (sceneData: any) => {
+    try {
+      const response = await fetch('/api/scenes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sceneData),
+      });
+
+      if (response.ok) {
+        // Refresh scenes data
+        window.location.reload(); // Simple refresh for now
+        setIsAddEffectModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Error saving scene:', error);
+    }
   };
   
   const onlineDevices = connectedDevices.filter(d => d.isOnline);
@@ -205,11 +245,11 @@ export default function Soundboard() {
                     />
                   </div>
                   <button
-                    onClick={handleAddSoundButton}
+                    onClick={handleAddEffect}
                     className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors"
                   >
                     <i className="fas fa-plus mr-2"></i>
-                    Add Sound
+                    Add Effect
                   </button>
                 </div>
               </div>
@@ -239,11 +279,13 @@ export default function Soundboard() {
         </div>
       </div>
       
-      {/* Audio Upload Modal */}
-      <AudioUploadModal
-        isOpen={isUploadModalOpen}
+      {/* Add Effect Modal */}
+      <AddEffectModal
+        isOpen={isAddEffectModalOpen}
         onClose={handleModalClose}
-        onSave={handleSoundSave}
+        onSaveSound={handleSoundSave}
+        onSaveScene={handleSceneSave}
+        devices={connectedDevices}
       />
     </div>
   );

@@ -43,14 +43,17 @@ export const scenes = pgTable("scenes", {
   colors: text("colors").array(),
   icon: text("icon").notNull().default("lightbulb"),
   targetDevices: text("target_devices").array(), // Array of device IDs that this scene will control
+  customJson: jsonb("custom_json"), // For custom JSON lighting effects
 });
 
 export const lightEffects = pgTable("light_effects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // 'flash', 'strobe', 'fade', 'cycle', 'breathe'
+  type: text("type").notNull(), // 'preset' or 'custom'
+  isCustom: boolean("is_custom").notNull().default(false),
   duration: integer("duration").notNull().default(1000),
   configuration: jsonb("configuration").notNull(),
+  customJson: jsonb("custom_json"), // For custom JSON effects
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -91,10 +94,35 @@ export type Scene = typeof scenes.$inferSelect;
 export type InsertLightEffect = z.infer<typeof insertLightEffectSchema>;
 export type LightEffect = typeof lightEffects.$inferSelect;
 
+// Custom lighting effect JSON schema
+export const lightingEffectStepSchema = z.object({
+  brightness: z.number().min(0).max(100).describe("Brightness level (0-100)"),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).describe("Color in HEX format (#RRGGBB)"),
+  duration: z.number().min(100).describe("Duration in milliseconds"),
+  easing: z.object({
+    type: z.enum(['linear', 'ease-in', 'ease-out', 'ease-in-out']).default('linear'),
+    duration: z.number().min(0).default(0).describe("Easing duration in milliseconds")
+  }).optional(),
+  deviceIds: z.array(z.string()).describe("Array of device IDs to control")
+});
+
+export const customLightingEffectSchema = z.object({
+  name: z.string().describe("Name of the custom effect"),
+  description: z.string().optional(),
+  loop: z.boolean().default(false).describe("Whether the effect should loop"),
+  loopCount: z.number().min(1).optional().describe("Number of loops (omit for infinite)"),
+  globalDelay: z.number().min(0).default(0).describe("Global delay before starting effect"),
+  steps: z.array(lightingEffectStepSchema).min(1).describe("Array of lighting steps")
+});
+
 // WebSocket message types
 export type WebSocketMessage = 
   | { type: 'device_status'; payload: Device }
   | { type: 'device_discovered'; payload: Device }
   | { type: 'light_effect_triggered'; payload: { deviceId: number; effect: string } }
   | { type: 'sound_played'; payload: { buttonId: number; timestamp: number } }
-  | { type: 'scene_applied'; payload: { sceneId: number; devices: number[] } };
+  | { type: 'scene_applied'; payload: { sceneId: number; devices: number[] } }
+  | { type: 'custom_effect_applied'; payload: { effectId: number; devices: string[] } };
+
+export type CustomLightingEffect = z.infer<typeof customLightingEffectSchema>;
+export type LightingEffectStep = z.infer<typeof lightingEffectStepSchema>;
