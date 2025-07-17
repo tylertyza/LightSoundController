@@ -1,30 +1,49 @@
 import { useState } from "react";
-import { SoundButton } from "@shared/schema";
+import { SoundButton, Scene } from "@shared/schema";
 
 interface SoundboardGridProps {
   soundButtons: SoundButton[];
+  scenes: Scene[];
   onSoundButtonClick: (button: SoundButton) => void;
+  onSceneClick: (scene: Scene) => void;
 }
 
-export default function SoundboardGrid({ soundButtons, onSoundButtonClick }: SoundboardGridProps) {
-  const [activeButtons, setActiveButtons] = useState<Set<number>>(new Set());
+type GridItem = (SoundButton & { type: 'sound' }) | (Scene & { type: 'scene' });
+
+export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClick, onSceneClick }: SoundboardGridProps) {
+  const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
   
-  const handleButtonClick = (button: SoundButton) => {
-    setActiveButtons(prev => new Set(prev).add(button.id));
-    onSoundButtonClick(button);
+  // Combine and sort sound buttons and scenes
+  const allItems: GridItem[] = [
+    ...soundButtons.map(button => ({ ...button, type: 'sound' as const })),
+    ...scenes.map(scene => ({ ...scene, type: 'scene' as const }))
+  ].sort((a, b) => a.name.localeCompare(b.name));
+  
+  const handleItemClick = (item: GridItem) => {
+    const itemKey = `${item.type}-${item.id}`;
+    setActiveItems(prev => new Set(prev).add(itemKey));
+    
+    if (item.type === 'sound') {
+      onSoundButtonClick(item);
+    } else {
+      onSceneClick(item);
+    }
     
     // Remove active state after 2 seconds
     setTimeout(() => {
-      setActiveButtons(prev => {
+      setActiveItems(prev => {
         const newSet = new Set(prev);
-        newSet.delete(button.id);
+        newSet.delete(itemKey);
         return newSet;
       });
     }, 2000);
   };
   
-  const getButtonStyle = (button: SoundButton, isActive: boolean) => {
+  const getItemStyle = (item: GridItem, isActive: boolean) => {
     const baseStyle = "bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition-all duration-200 cursor-pointer group border border-slate-700";
+    const typeStyle = item.type === 'scene' ? "border-l-4 border-l-amber-500" : "";
+    
+    const color = item.type === 'sound' ? item.color : 'amber';
     const colorMap: { [key: string]: string } = {
       purple: "hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/20",
       green: "hover:border-green-500 hover:shadow-lg hover:shadow-green-500/20",
@@ -35,15 +54,17 @@ export default function SoundboardGrid({ soundButtons, onSoundButtonClick }: Sou
       pink: "hover:border-pink-500 hover:shadow-lg hover:shadow-pink-500/20",
       cyan: "hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20",
       lime: "hover:border-lime-500 hover:shadow-lg hover:shadow-lime-500/20",
+      amber: "hover:border-amber-500 hover:shadow-lg hover:shadow-amber-500/20",
     };
     
     const activeStyle = isActive ? "scale-105 shadow-lg shadow-blue-500/50" : "";
-    const hoverStyle = colorMap[button.color] || "hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20";
+    const hoverStyle = colorMap[color] || "hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20";
     
-    return `${baseStyle} ${hoverStyle} ${activeStyle}`;
+    return `${baseStyle} ${typeStyle} ${hoverStyle} ${activeStyle}`;
   };
   
-  const getIconBackgroundStyle = (button: SoundButton) => {
+  const getIconBackgroundStyle = (item: GridItem) => {
+    const color = item.type === 'sound' ? item.color : 'amber';
     const colorMap: { [key: string]: string } = {
       purple: "bg-gradient-to-br from-purple-500 to-pink-600",
       green: "bg-gradient-to-br from-emerald-500 to-teal-600",
@@ -54,12 +75,14 @@ export default function SoundboardGrid({ soundButtons, onSoundButtonClick }: Sou
       pink: "bg-gradient-to-br from-pink-500 to-rose-600",
       cyan: "bg-gradient-to-br from-cyan-500 to-blue-600",
       lime: "bg-gradient-to-br from-lime-500 to-green-600",
+      amber: "bg-gradient-to-br from-amber-500 to-orange-600",
     };
     
-    return colorMap[button.color] || "bg-gradient-to-br from-blue-500 to-indigo-600";
+    return colorMap[color] || "bg-gradient-to-br from-blue-500 to-indigo-600";
   };
   
-  const getHoverTextColor = (button: SoundButton) => {
+  const getHoverTextColor = (item: GridItem) => {
+    const color = item.type === 'sound' ? item.color : 'amber';
     const colorMap: { [key: string]: string } = {
       purple: "group-hover:text-purple-400",
       green: "group-hover:text-green-400",
@@ -70,41 +93,51 @@ export default function SoundboardGrid({ soundButtons, onSoundButtonClick }: Sou
       pink: "group-hover:text-pink-400",
       cyan: "group-hover:text-cyan-400",
       lime: "group-hover:text-lime-400",
+      amber: "group-hover:text-amber-400",
     };
     
-    return colorMap[button.color] || "group-hover:text-blue-400";
+    return colorMap[color] || "group-hover:text-blue-400";
   };
   
-  if (soundButtons.length === 0) {
+  if (allItems.length === 0) {
     return (
       <div className="text-center py-16">
         <i className="fas fa-music text-slate-600 text-6xl mb-4"></i>
-        <h3 className="text-lg font-medium text-slate-400 mb-2">No Sound Effects</h3>
-        <p className="text-slate-500 text-sm">Click "Add Sound" to create your first sound effect button</p>
+        <h3 className="text-lg font-medium text-slate-400 mb-2">No Sound Effects or Scenes</h3>
+        <p className="text-slate-500 text-sm">Click "Add Sound" or add lighting scenes to get started</p>
       </div>
     );
   }
   
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {soundButtons.map((button) => {
-        const isActive = activeButtons.has(button.id);
+      {allItems.map((item) => {
+        const itemKey = `${item.type}-${item.id}`;
+        const isActive = activeItems.has(itemKey);
+        const icon = item.type === 'sound' ? item.icon : item.icon;
         
         return (
           <div
-            key={button.id}
-            className={getButtonStyle(button, isActive)}
-            onClick={() => handleButtonClick(button)}
+            key={itemKey}
+            className={getItemStyle(item, isActive)}
+            onClick={() => handleItemClick(item)}
           >
             <div className="text-center">
-              <div className={`w-12 h-12 ${getIconBackgroundStyle(button)} rounded-lg mx-auto mb-3 flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform`}>
-                <i className={`fas fa-${button.icon}`}></i>
+              <div className={`w-12 h-12 ${getIconBackgroundStyle(item)} rounded-lg mx-auto mb-3 flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform`}>
+                <i className={`fas fa-${icon}`}></i>
               </div>
-              <h3 className={`text-sm font-semibold text-white ${getHoverTextColor(button)} transition-colors`}>
-                {button.name}
-              </h3>
-              {button.description && (
-                <p className="text-xs text-slate-400 mt-1">{button.description}</p>
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <h3 className={`text-sm font-semibold text-white ${getHoverTextColor(item)} transition-colors`}>
+                  {item.name}
+                </h3>
+                {item.type === 'scene' && (
+                  <span className="text-xs bg-amber-600 text-white px-1 py-0.5 rounded">
+                    Scene
+                  </span>
+                )}
+              </div>
+              {item.description && (
+                <p className="text-xs text-slate-400 mt-1">{item.description}</p>
               )}
             </div>
           </div>

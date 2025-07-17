@@ -89,6 +89,28 @@ export default function Soundboard() {
       console.error('Error playing sound:', error);
     }
   };
+
+  const handleSceneClick = async (scene: Scene) => {
+    try {
+      const response = await fetch(`/api/scenes/${scene.id}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        sendMessage({
+          type: 'scene_applied',
+          payload: { sceneId: scene.id }
+        });
+      } else {
+        console.error('Error applying scene:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error applying scene:', error);
+    }
+  };
   
   const handleDeviceDiscovery = () => {
     sendMessage({
@@ -194,7 +216,9 @@ export default function Soundboard() {
               
               <SoundboardGrid
                 soundButtons={soundButtons}
+                scenes={scenes}
                 onSoundButtonClick={handleSoundButtonClick}
+                onSceneClick={handleSceneClick}
               />
             </div>
           </div>

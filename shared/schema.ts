@@ -32,6 +32,7 @@ export const soundButtons = pgTable("sound_buttons", {
   color: text("color").notNull(),
   icon: text("icon").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
+  targetDevices: text("target_devices").array(), // Array of device IDs that this sound button will control
 });
 
 export const scenes = pgTable("scenes", {
@@ -40,6 +41,8 @@ export const scenes = pgTable("scenes", {
   description: text("description"),
   configuration: jsonb("configuration").notNull(),
   colors: text("colors").array(),
+  icon: text("icon").notNull().default("lightbulb"),
+  targetDevices: text("target_devices").array(), // Array of device IDs that this scene will control
 });
 
 export const lightEffects = pgTable("light_effects", {

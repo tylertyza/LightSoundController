@@ -73,25 +73,33 @@ export class MemStorage implements IStorage {
         name: 'Movie Night', 
         description: 'Dim warm lighting', 
         configuration: { brightness: 20, temperature: 2700 },
-        colors: ['#ff8c00', '#ff4500']
+        colors: ['#ff8c00', '#ff4500'],
+        icon: 'film',
+        targetDevices: [] // Initially no target devices
       },
       { 
         name: 'Focus Mode', 
         description: 'Bright cool white', 
         configuration: { brightness: 100, temperature: 6500 },
-        colors: ['#87ceeb', '#ffffff']
+        colors: ['#87ceeb', '#ffffff'],
+        icon: 'brain',
+        targetDevices: []
       },
       { 
         name: 'Party Time', 
         description: 'Rainbow colors', 
         configuration: { brightness: 80, effect: 'cycle' },
-        colors: ['#8a2be2', '#ff69b4', '#0000ff']
+        colors: ['#8a2be2', '#ff69b4', '#0000ff'],
+        icon: 'glass-cheers',
+        targetDevices: []
       },
       { 
         name: 'Relax', 
         description: 'Soft purple ambiance', 
         configuration: { brightness: 40, temperature: 3000 },
-        colors: ['#dda0dd', '#6a5acd']
+        colors: ['#dda0dd', '#6a5acd'],
+        icon: 'leaf',
+        targetDevices: []
       },
     ];
 
@@ -174,7 +182,8 @@ export class MemStorage implements IStorage {
       ...insertButton, 
       id, 
       sortOrder,
-      description: insertButton.description || null
+      description: insertButton.description || null,
+      targetDevices: insertButton.targetDevices || []
     };
     this.soundButtons.set(id, button);
     return button;
@@ -207,7 +216,9 @@ export class MemStorage implements IStorage {
       ...insertScene, 
       id,
       description: insertScene.description || null,
-      colors: insertScene.colors || null
+      colors: insertScene.colors || null,
+      icon: insertScene.icon || 'lightbulb',
+      targetDevices: insertScene.targetDevices || []
     };
     this.scenes.set(id, scene);
     return scene;
