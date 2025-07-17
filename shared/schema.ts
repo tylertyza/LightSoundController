@@ -20,6 +20,7 @@ export const devices = pgTable("devices", {
   color: jsonb("color"),
   brightness: integer("brightness").notNull().default(100),
   temperature: integer("temperature").notNull().default(3500),
+  isAdopted: boolean("is_adopted").notNull().default(false),
 });
 
 export const soundButtons = pgTable("sound_buttons", {

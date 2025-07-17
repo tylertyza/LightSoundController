@@ -216,6 +216,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.post('/api/devices/:id/adopt', async (req, res) => {
+    try {
+      const deviceId = parseInt(req.params.id);
+      const { adopt } = req.body;
+      
+      const device = await storage.getDevice(deviceId);
+      if (!device) {
+        return res.status(404).json({ error: 'Device not found' });
+      }
+      
+      const updatedDevice = await storage.updateDevice(deviceId, { isAdopted: adopt });
+      
+      res.json(updatedDevice);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update device adoption status' });
+    }
+  });
+
   app.delete('/api/devices/:id', async (req, res) => {
     try {
       const deviceId = parseInt(req.params.id);

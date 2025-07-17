@@ -139,7 +139,8 @@ export class MemStorage implements IStorage {
       power: insertDevice.power || false,
       brightness: insertDevice.brightness || 100,
       temperature: insertDevice.temperature || 3500,
-      color: insertDevice.color || null
+      color: insertDevice.color || null,
+      isAdopted: insertDevice.isAdopted || false
     };
     this.devices.set(id, device);
     return device;

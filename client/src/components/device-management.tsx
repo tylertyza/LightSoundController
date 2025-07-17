@@ -15,22 +15,22 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const toggleDeviceMutation = useMutation({
-    mutationFn: async ({ deviceId, power }: { deviceId: number; power: boolean }) => {
-      const response = await apiRequest("POST", `/api/devices/${deviceId}/power`, { power });
+  const adoptDeviceMutation = useMutation({
+    mutationFn: async ({ deviceId, adopt }: { deviceId: number; adopt: boolean }) => {
+      const response = await apiRequest("POST", `/api/devices/${deviceId}/adopt`, { adopt });
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
       toast({
         title: "Device updated",
-        description: "Device power state updated successfully",
+        description: "Device adoption status updated successfully",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to update device power state",
+        description: "Failed to update device adoption status",
         variant: "destructive",
       });
     },
@@ -77,8 +77,8 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
     }
   };
   
-  const handleToggleDevice = (device: Device) => {
-    toggleDeviceMutation.mutate({ deviceId: device.id, power: !device.power });
+  const handleAdoptDevice = (device: Device) => {
+    adoptDeviceMutation.mutate({ deviceId: device.id, adopt: !device.isAdopted });
   };
   
   const handleDeleteDevice = (deviceId: number) => {
@@ -130,24 +130,32 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
               {devices.map((device) => (
                 <div
                   key={device.id}
-                  className="bg-slate-900 rounded-lg p-3 border border-slate-700"
+                  className={`bg-slate-900 rounded-lg p-3 border transition-colors ${
+                    device.isAdopted ? 'border-blue-500 bg-blue-950' : 'border-slate-700'
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
                       <span className="text-sm font-medium text-white">{device.label}</span>
+                      {device.isAdopted && (
+                        <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+                          Adopted
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-1">
                       <button
-                        onClick={() => handleToggleDevice(device)}
-                        disabled={toggleDeviceMutation.isPending}
-                        className={`text-xs px-2 py-1 rounded ${
-                          device.power
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                            : 'bg-slate-600 hover:bg-slate-700 text-slate-300'
-                        } transition-colors`}
+                        onClick={() => handleAdoptDevice(device)}
+                        disabled={adoptDeviceMutation.isPending}
+                        className={`text-xs px-2 py-1 rounded transition-colors ${
+                          device.isAdopted
+                            ? 'bg-red-600 hover:bg-red-700 text-white'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
                       >
-                        <i className={`fas ${device.power ? 'fa-lightbulb' : 'fa-power-off'}`}></i>
+                        <i className={`fas ${device.isAdopted ? 'fa-minus' : 'fa-plus'} mr-1`}></i>
+                        {device.isAdopted ? 'Remove' : 'Adopt'}
                       </button>
                       <button
                         onClick={() => handleDeleteDevice(device.id)}

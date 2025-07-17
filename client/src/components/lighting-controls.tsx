@@ -18,7 +18,7 @@ export default function LightingControls({ devices, scenes, onTriggerEffect }: L
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const onlineDevices = devices.filter(d => d.isOnline);
+  const adoptedDevices = devices.filter(d => d.isAdopted && d.isOnline);
   
   const powerMutation = useMutation({
     mutationFn: async ({ deviceId, power }: { deviceId: number; power: boolean }) => {
@@ -61,13 +61,13 @@ export default function LightingControls({ devices, scenes, onTriggerEffect }: L
   });
   
   const handleAllLightsOn = () => {
-    onlineDevices.forEach(device => {
+    adoptedDevices.forEach(device => {
       powerMutation.mutate({ deviceId: device.id, power: true });
     });
   };
   
   const handleAllLightsOff = () => {
-    onlineDevices.forEach(device => {
+    adoptedDevices.forEach(device => {
       powerMutation.mutate({ deviceId: device.id, power: false });
     });
   };
@@ -80,7 +80,7 @@ export default function LightingControls({ devices, scenes, onTriggerEffect }: L
     const saturation = 65535;
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
-    onlineDevices.forEach(device => {
+    adoptedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
         color: { hue, saturation, brightness: brightnessValue, kelvin: temperature }
@@ -93,7 +93,7 @@ export default function LightingControls({ devices, scenes, onTriggerEffect }: L
     
     const brightnessValue = Math.round((newBrightness / 100) * 65535);
     
-    onlineDevices.forEach(device => {
+    adoptedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
         color: { hue: 0, saturation: 0, brightness: brightnessValue, kelvin: temperature }
@@ -106,7 +106,7 @@ export default function LightingControls({ devices, scenes, onTriggerEffect }: L
     
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
-    onlineDevices.forEach(device => {
+    adoptedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
         color: { hue: 0, saturation: 0, brightness: brightnessValue, kelvin: newTemperature }
@@ -119,7 +119,7 @@ export default function LightingControls({ devices, scenes, onTriggerEffect }: L
   };
   
   const handleEffectToggle = (effectType: string) => {
-    onlineDevices.forEach(device => {
+    adoptedDevices.forEach(device => {
       onTriggerEffect(device.id, effectType, 2000);
     });
   };
@@ -131,6 +131,45 @@ export default function LightingControls({ devices, scenes, onTriggerEffect }: L
           <i className="fas fa-palette mr-2"></i>
           Lighting Controls
         </h2>
+      </div>
+      
+      {/* Adopted Devices */}
+      <div className="p-4 border-b border-slate-700">
+        <h3 className="text-sm font-medium text-slate-300 mb-3">Adopted Devices</h3>
+        {adoptedDevices.length === 0 ? (
+          <div className="text-center py-4">
+            <i className="fas fa-plus-circle text-slate-600 text-2xl mb-2"></i>
+            <p className="text-slate-400 text-sm">No devices adopted</p>
+            <p className="text-slate-500 text-xs mt-1">Adopt devices from the discovery panel to control them here</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {adoptedDevices.map((device) => (
+              <div
+                key={device.id}
+                className="bg-slate-900 rounded-lg p-2 border border-slate-600"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                    <span className="text-sm font-medium text-white">{device.label}</span>
+                  </div>
+                  <button
+                    onClick={() => powerMutation.mutate({ deviceId: device.id, power: !device.power })}
+                    disabled={powerMutation.isPending}
+                    className={`text-xs px-2 py-1 rounded transition-colors ${
+                      device.power
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        : 'bg-slate-600 hover:bg-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <i className={`fas ${device.power ? 'fa-lightbulb' : 'fa-power-off'}`}></i>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
       {/* Quick Controls */}
