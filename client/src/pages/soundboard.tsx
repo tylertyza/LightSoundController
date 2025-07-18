@@ -47,6 +47,15 @@ export default function Soundboard() {
       setConnectedDevices(devices);
     }
   }, [devices]);
+
+  // Periodic refresh for device status colors every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchDevices();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [refetchDevices]);
   
   useEffect(() => {
     setMasterVolume(globalVolume);

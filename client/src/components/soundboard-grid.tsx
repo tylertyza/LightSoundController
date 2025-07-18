@@ -338,7 +338,13 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
               <div
                 key={itemKey}
                 className={getItemStyle(item, isActive, isPersistent)}
-                onClick={() => handleItemClick(item)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleItemClick(item);
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                }}
               >
                 <div className={`flex ${item.type === 'lighting' ? 'flex-row items-center' : 'flex-col items-center justify-center'} h-full text-center`}>
                   <div className={`${item.type === 'lighting' ? 'w-6 h-6 md:w-8 md:h-8 mr-2 md:mr-3' : 'w-8 h-8 md:w-10 md:h-10 mb-2'} rounded-lg flex items-center justify-center ${getIconBackgroundStyle(item)}`}>

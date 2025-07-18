@@ -231,9 +231,8 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
                             : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
                       >
-                        <i className={`fas ${device.isAdopted ? 'fa-minus' : 'fa-plus'} mr-1`}></i>
-                        <span className="hidden sm:inline">{device.isAdopted ? 'Remove' : 'Adopt'}</span>
-                        <span className="sm:hidden">{device.isAdopted ? '-' : '+'}</span>
+                        <i className={`fas ${device.isAdopted ? 'fa-minus' : 'fa-plus'}`}></i>
+                        <span className="hidden sm:inline ml-1">{device.isAdopted ? 'Remove' : 'Adopt'}</span>
                       </button>
                       <button
                         onClick={() => handleDeleteDevice(device.id)}
