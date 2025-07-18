@@ -237,6 +237,10 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
       if (customEffectJson) {
         try {
           customEffect = JSON.parse(customEffectJson);
+          // Support raw arrays by wrapping them in an object
+          if (Array.isArray(customEffect)) {
+            customEffect = { steps: customEffect };
+          }
         } catch (error) {
           console.error('Invalid effect JSON:', error);
           return;
@@ -262,7 +266,10 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
         globalDelay: customEffect.globalDelay ?? customEffectGlobalDelay,
         steps: stepsArray
       };
-      // Create a lighting effect
+      // Create a lighting effect and persist customJson at the top level so
+      // it is available when editing later.  Without this field, the edit
+      // dialog falls back to a default template and loses the user supplied
+      // steps.
       const lightingEffect = {
         name: sceneName,
         description: sceneDescription || undefined,
@@ -271,6 +278,9 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
         configuration: {
           customJson: completeEffect
         },
+        // Store the effect JSON at the root level as well for easier access
+        customJson: completeEffect,
+        isCustom: true,
         colors: extractedColors,
         hiddenFromDashboard: hiddenFromDashboard
       };
