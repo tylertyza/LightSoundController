@@ -85,6 +85,23 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       });
     },
   });
+
+  const powerMutation = useMutation({
+    mutationFn: async ({ deviceId, power }: { deviceId: number; power: boolean }) => {
+      const response = await apiRequest("POST", `/api/devices/${deviceId}/power`, { power });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update device power",
+        variant: "destructive",
+      });
+    },
+  });
   
 
   
@@ -171,6 +188,17 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const handleSceneSelect = (sceneId: number) => {
     sceneApplyMutation.mutate(sceneId);
   };
+
+  const handlePowerToggle = (power: boolean) => {
+    if (selectedDeviceIds.length === 0) return;
+    
+    selectedDevices.forEach(device => {
+      powerMutation.mutate({
+        deviceId: device.id,
+        power: power
+      });
+    });
+  };
   
 
   
@@ -253,6 +281,37 @@ export default function LightingControls({ devices }: LightingControlsProps) {
             {selectedDeviceIds.length === 0 ? 'Select devices above' : `${selectedDeviceIds.length} device${selectedDeviceIds.length > 1 ? 's' : ''} selected`}
           </div>
         </div>
+
+        {/* Power Toggle */}
+        {selectedDeviceIds.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-slate-400">Power</label>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePowerToggle(false)}
+                  disabled={powerMutation.isPending}
+                  className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700"
+                >
+                  <i className="fas fa-power-off mr-1"></i>
+                  Off
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePowerToggle(true)}
+                  disabled={powerMutation.isPending}
+                  className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700"
+                >
+                  <i className="fas fa-lightbulb mr-1"></i>
+                  On
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Color Picker */}
         <div className="mb-4">

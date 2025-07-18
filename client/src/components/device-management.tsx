@@ -5,6 +5,72 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
+// Helper function to generate status circle color based on device state
+const getDeviceStatusColor = (device: Device) => {
+  // If device is off, return black
+  if (!device.power) {
+    return '#000000';
+  }
+  
+  // If device uses temperature/kelvin (white light)
+  if (device.color?.kelvin && device.color.kelvin > 0) {
+    // Convert kelvin to RGB-ish color
+    const kelvin = device.color.kelvin;
+    let r, g, b;
+    
+    if (kelvin <= 2000) {
+      r = 255; g = 147; b = 41;
+    } else if (kelvin <= 3000) {
+      r = 255; g = 197; b = 143;
+    } else if (kelvin <= 4000) {
+      r = 255; g = 214; b = 170;
+    } else if (kelvin <= 5000) {
+      r = 255; g = 228; b = 206;
+    } else {
+      r = 255; g = 243; b = 239;
+    }
+    
+    // Apply brightness
+    const brightness = (device.brightness || 100) / 100;
+    r = Math.round(r * brightness);
+    g = Math.round(g * brightness);
+    b = Math.round(b * brightness);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  
+  // If device uses color (HSV/HSB)
+  if (device.color?.hue !== undefined && device.color?.saturation !== undefined) {
+    const hue = (device.color.hue / 65535) * 360;
+    const saturation = device.color.saturation / 65535;
+    const brightness = ((device.color.brightness || device.brightness || 100) / 65535) * 100;
+    
+    // Convert HSV to RGB
+    const c = (brightness / 100) * saturation;
+    const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+    const m = (brightness / 100) - c;
+    
+    let r, g, b;
+    if (hue < 60) { r = c; g = x; b = 0; }
+    else if (hue < 120) { r = x; g = c; b = 0; }
+    else if (hue < 180) { r = 0; g = c; b = x; }
+    else if (hue < 240) { r = 0; g = x; b = c; }
+    else if (hue < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    
+    r = Math.round((r + m) * 255);
+    g = Math.round((g + m) * 255);
+    b = Math.round((b + m) * 255);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  
+  // Default to dim white if no color info
+  const brightness = (device.brightness || 100) / 100;
+  const gray = Math.round(255 * brightness);
+  return `rgb(${gray}, ${gray}, ${gray})`;
+};
+
 interface DeviceManagementProps {
   devices: Device[];
   onDiscoverDevices: () => void;
@@ -137,6 +203,12 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                      {/* Status circle showing current light color/brightness */}
+                      <div 
+                        className="w-4 h-4 rounded-full border border-slate-600 flex-shrink-0"
+                        style={{ backgroundColor: getDeviceStatusColor(device) }}
+                        title={`${device.power ? 'On' : 'Off'} - ${device.brightness || 100}% brightness`}
+                      />
                       <span className="text-sm font-medium text-white">{device.label}</span>
                     </div>
                     <div className="flex items-center space-x-1">
