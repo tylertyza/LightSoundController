@@ -49,6 +49,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
   const [sceneBrightness, setSceneBrightness] = useState(80);
   const [sceneColor, setSceneColor] = useState('#ffffff');
   const [sceneTemperature, setSceneTemperature] = useState(3500);
+  const [sceneFadeIn, setSceneFadeIn] = useState(1000);
+  const [sceneFadeOut, setSceneFadeOut] = useState(1000);
 
   const adoptedDevices = devices.filter(device => device.isAdopted);
 
@@ -93,28 +95,13 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
     } else {
       if (!sceneName) return;
       
-      let configuration: any = {};
-      let customJson = null;
-      
-      if (sceneType === 'custom') {
-        try {
-          const parsedJson = JSON.parse(customEffectJson);
-          const validated = customLightingEffectSchema.parse(parsedJson);
-          customJson = validated;
-          configuration = { type: 'custom' };
-        } catch (error) {
-          console.error('Invalid custom JSON:', error);
-          return;
-        }
-      } else {
-        configuration = {
-          type: 'preset',
-          effect: presetEffect,
-          brightness: sceneBrightness,
-          color: sceneColor,
-          temperature: sceneTemperature,
-        };
-      }
+      const configuration = {
+        type: 'simple',
+        color: sceneColor,
+        brightness: sceneBrightness,
+        fadeIn: sceneFadeIn,
+        fadeOut: sceneFadeOut,
+      };
       
       onSaveScene({
         name: sceneName,
@@ -123,7 +110,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
         colors: [sceneColor],
         icon: sceneIcon,
         targetDevices: selectedDevices,
-        customJson,
+        customJson: null,
       });
     }
     
@@ -280,71 +267,20 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
                 <Label className="text-white">Lighting Effect</Label>
                 <Select value={soundLightEffect} onValueChange={setSoundLightEffect}>
                   <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                    <SelectValue />
+                    <SelectValue placeholder="Select a lighting effect" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="flash" className="text-white">Flash</SelectItem>
+                    <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
+                    <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
                     <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
                     <SelectItem value="fade" className="text-white">Fade</SelectItem>
-                    <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
                     <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
-                    <SelectItem value="custom" className="text-white">Custom JSON Effect</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Custom JSON Effect for Sound */}
-            {soundLightEffect === 'custom' && (
-              <div className="space-y-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
-                <div className="flex items-center space-x-2">
-                  <Lightbulb className="w-4 h-4 text-amber-400" />
-                  <Label className="text-white">Custom Lighting Effect</Label>
-                </div>
-                
-                <div>
-                  <Label className="text-white">Upload JSON File</Label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      type="file"
-                      accept=".json"
-                      onChange={(e) => handleFileUpload(e, 'custom')}
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
-                    {customEffectFile && (
-                      <Badge variant="outline" className="text-green-400 border-green-400">
-                        {customEffectFile.name}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-white">Custom Effect JSON</Label>
-                  <Textarea
-                    value={customEffectJson}
-                    onChange={(e) => setCustomEffectJson(e.target.value)}
-                    placeholder="Paste your custom lighting effect JSON here..."
-                    className="bg-slate-800 border-slate-700 text-white font-mono text-sm"
-                    rows={6}
-                  />
-                </div>
-                
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white text-sm flex items-center">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Example JSON Structure
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <pre className="text-slate-300 text-xs overflow-x-auto">
-                      {JSON.stringify(exampleJson, null, 2)}
-                    </pre>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+
 
             <div>
               <Label className="text-white">Audio File</Label>
@@ -406,119 +342,87 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-white">Default Color</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="color"
+                    value={sceneColor}
+                    onChange={(e) => setSceneColor(e.target.value)}
+                    className="w-16 h-10 bg-slate-800 border-slate-700"
+                  />
+                  <Input
+                    value={sceneColor}
+                    onChange={(e) => setSceneColor(e.target.value)}
+                    className="bg-slate-800 border-slate-700 text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-white">Brightness ({sceneBrightness}%)</Label>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={sceneBrightness}
+                  onChange={(e) => setSceneBrightness(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-white">Fade In Duration (ms)</Label>
+                <Input
+                  type="number"
+                  value={sceneFadeIn}
+                  onChange={(e) => setSceneFadeIn(Number(e.target.value))}
+                  placeholder="1000"
+                  className="bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-white">Fade Out Duration (ms)</Label>
+                <Input
+                  type="number"
+                  value={sceneFadeOut}
+                  onChange={(e) => setSceneFadeOut(Number(e.target.value))}
+                  placeholder="1000"
+                  className="bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+            </div>
+
             <div className="space-y-4">
-              <Label className="text-white">Effect Type</Label>
-              <Tabs value={sceneType} onValueChange={(value) => setSceneType(value as 'preset' | 'custom')}>
-                <TabsList className="grid w-full grid-cols-2 bg-slate-800">
-                  <TabsTrigger value="preset" className="text-white">Preset Effects</TabsTrigger>
-                  <TabsTrigger value="custom" className="text-white">Custom JSON</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="preset" className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-white">Preset Effect</Label>
-                      <Select value={presetEffect} onValueChange={setPresetEffect}>
-                        <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-700">
-                          <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
-                          <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
-                          <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
-                          <SelectItem value="fade" className="text-white">Fade</SelectItem>
-                          <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
-                        </SelectContent>
-                      </Select>
+              <Label className="text-white">Device-Specific Colors</Label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {adoptedDevices.map((device) => (
+                  <div key={device.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                      <span className="text-white text-sm">{device.name || `Device ${device.id}`}</span>
                     </div>
-                    <div>
-                      <Label className="text-white">Brightness ({sceneBrightness}%)</Label>
-                      <input
-                        type="range"
-                        min="1"
-                        max="100"
-                        value={sceneBrightness}
-                        onChange={(e) => setSceneBrightness(Number(e.target.value))}
-                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-white">Color</Label>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          type="color"
-                          value={sceneColor}
-                          onChange={(e) => setSceneColor(e.target.value)}
-                          className="w-16 h-10 bg-slate-800 border-slate-700"
-                        />
-                        <Input
-                          value={sceneColor}
-                          onChange={(e) => setSceneColor(e.target.value)}
-                          className="bg-slate-800 border-slate-700 text-white"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-white">Temperature ({sceneTemperature}K)</Label>
-                      <input
-                        type="range"
-                        min="2500"
-                        max="9000"
-                        step="100"
-                        value={sceneTemperature}
-                        onChange={(e) => setSceneTemperature(Number(e.target.value))}
-                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="custom" className="space-y-4">
-                  <div>
-                    <Label className="text-white">Upload JSON File</Label>
                     <div className="flex items-center space-x-2">
                       <Input
-                        type="file"
-                        accept=".json"
-                        onChange={(e) => handleFileUpload(e, 'custom')}
-                        className="bg-slate-800 border-slate-700 text-white"
+                        type="color"
+                        defaultValue={sceneColor}
+                        className="w-10 h-8 bg-slate-800 border-slate-700 p-0"
+                        onChange={(e) => {
+                          // Handle device-specific color changes
+                          console.log(`Device ${device.id} color:`, e.target.value);
+                        }}
                       />
-                      {customEffectFile && (
-                        <Badge variant="outline" className="text-green-400 border-green-400">
-                          {customEffectFile.name}
-                        </Badge>
-                      )}
+                      <Checkbox
+                        checked={selectedDevices.includes(device.id.toString())}
+                        onCheckedChange={() => handleDeviceToggle(device.id.toString())}
+                        className="border-slate-600"
+                      />
                     </div>
                   </div>
-                  
-                  <div>
-                    <Label className="text-white">Custom Effect JSON</Label>
-                    <Textarea
-                      value={customEffectJson}
-                      onChange={(e) => setCustomEffectJson(e.target.value)}
-                      placeholder="Paste your custom lighting effect JSON here..."
-                      className="bg-slate-800 border-slate-700 text-white font-mono text-sm"
-                      rows={10}
-                    />
-                  </div>
-                  
-                  <Card className="bg-slate-800 border-slate-700">
-                    <CardHeader>
-                      <CardTitle className="text-white text-sm flex items-center">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Example JSON Structure
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <pre className="text-slate-300 text-xs overflow-x-auto">
-                        {JSON.stringify(exampleJson, null, 2)}
-                      </pre>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+                ))}
+              </div>
             </div>
           </TabsContent>
         </Tabs>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import DeviceManagement from "@/components/device-management";
 import LightingControls from "@/components/lighting-controls";
+import LightingEffects from "@/components/lighting-effects";
 import SoundboardGrid from "@/components/soundboard-grid";
 import { AddEffectModal } from "@/components/add-effect-modal";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -14,6 +15,7 @@ export default function Soundboard() {
   const [connectedDevices, setConnectedDevices] = useState<Device[]>([]);
   const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(true);
   const [isLightingPanelOpen, setIsLightingPanelOpen] = useState(true);
+  const [availableLightingEffects, setAvailableLightingEffects] = useState<any[]>([]);
   
   const { socket, sendMessage } = useWebSocket();
   const { playSound, setMasterVolume } = useAudio();
@@ -297,16 +299,7 @@ export default function Soundboard() {
         
         {/* Lighting Controls Panel */}
         <div className={`transition-all duration-300 ${isLightingPanelOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
-          <LightingControls
-            devices={connectedDevices}
-            scenes={scenes}
-            onTriggerEffect={(deviceId, effectType, duration) => {
-              sendMessage({
-                type: 'trigger_effect',
-                payload: { deviceId, effectType, duration }
-              });
-            }}
-          />
+          <LightingControls devices={connectedDevices} />
         </div>
       </div>
       

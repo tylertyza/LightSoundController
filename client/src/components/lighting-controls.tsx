@@ -4,14 +4,13 @@ import { Device, Scene } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import LightingEffects from "./lighting-effects";
 
 interface LightingControlsProps {
   devices: Device[];
-  scenes: Scene[];
-  onTriggerEffect: (deviceId: number, effectType: string, duration: number) => void;
 }
 
-export default function LightingControls({ devices, scenes, onTriggerEffect }: LightingControlsProps) {
+export default function LightingControls({ devices }: LightingControlsProps) {
   const [selectedColor, setSelectedColor] = useState("#3b82f6");
   const [brightness, setBrightness] = useState(80);
   const [temperature, setTemperature] = useState(3500);
@@ -247,35 +246,9 @@ export default function LightingControls({ devices, scenes, onTriggerEffect }: L
         </div>
       </div>
       
-      {/* Preset Scenes */}
+      {/* Lighting Effects */}
       <div className="p-4 border-b border-slate-700">
-        <h3 className="text-sm font-medium text-slate-300 mb-3">Preset Scenes</h3>
-        <div className="space-y-2">
-          {scenes.map((scene) => (
-            <button
-              key={scene.id}
-              onClick={() => handleSceneSelect(scene.id)}
-              disabled={sceneApplyMutation.isPending}
-              className="w-full bg-slate-900 hover:bg-slate-700 px-3 py-3 rounded-lg text-left transition-colors border border-slate-600"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-white">{scene.name}</div>
-                  <div className="text-xs text-slate-400">{scene.description}</div>
-                </div>
-                <div className="flex space-x-1">
-                  {scene.colors?.map((color, index) => (
-                    <div
-                      key={index}
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+        <LightingEffects />
       </div>
       
       {/* Effects */}
