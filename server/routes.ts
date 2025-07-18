@@ -427,10 +427,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/sound-buttons/custom-effect', async (req, res) => {
     try {
-      const { customEffect, deviceIds } = req.body;
+      let { customEffect, deviceIds, loopCount = 1 } = req.body;
+
       const devices = await storage.getOnlineDevices();
       const targetDevices = devices.filter(d => deviceIds.includes(d.id.toString()));
-      await applyCustomEffect(customEffect, targetDevices);
+
+      if (targetDevices.length === 0) {
+        return res.status(400).json({ error: 'No devices found' });
+      }
+
+      if (Array.isArray(customEffect)) {
+        customEffect = {
+          name: 'Custom Effect',
+          description: '',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: customEffect
+        };
+      }
+
+      const finalLoopCount = customEffect?.loopCount !== undefined ? customEffect.loopCount : loopCount;
+
+      for (const device of targetDevices as any[]) {
+        const deviceIdStr = device.id.toString();
+        const filteredSteps = (customEffect.steps || []).filter(
+          (step: any) => !Array.isArray(step.deviceIds) || step.deviceIds.map(String).includes(deviceIdStr)
+        );
+        if (filteredSteps.length === 0) continue;
+        const deviceCustomJson = { ...customEffect, steps: filteredSteps };
+        lifxService.applyCustomEffect(deviceIdStr, device.mac, device.ip, deviceCustomJson, finalLoopCount);
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error('Error applying custom effect:', error);
