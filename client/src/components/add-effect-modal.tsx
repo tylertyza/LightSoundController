@@ -276,38 +276,20 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-white">Color</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="color"
-                    value={soundColor}
-                    onChange={(e) => setSoundColor(e.target.value)}
-                    className="w-16 h-10 bg-slate-800 border-slate-700"
-                  />
-                  <Input
-                    value={soundColor}
-                    onChange={(e) => setSoundColor(e.target.value)}
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-white">Lighting Effect</Label>
-                <Select value={soundLightEffect} onValueChange={setSoundLightEffect}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                    <SelectValue placeholder="Select a lighting effect" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
-                    <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
-                    <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
-                    <SelectItem value="fade" className="text-white">Fade</SelectItem>
-                    <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label className="text-white">Lighting Effect</Label>
+              <Select value={soundLightEffect} onValueChange={setSoundLightEffect}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectValue placeholder="Select a lighting effect" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
+                  <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
+                  <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
+                  <SelectItem value="fade" className="text-white">Fade</SelectItem>
+                  <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
 
@@ -477,9 +459,92 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
           </TabsContent>
 
           <TabsContent value="lighting" className="space-y-4">
-            <div className="p-4 bg-slate-800 rounded-lg border border-slate-700">
-              <LightingEffects />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-white">Name</Label>
+                <Input
+                  value={sceneName}
+                  onChange={(e) => setSceneName(e.target.value)}
+                  placeholder="Lighting effect name"
+                  className="bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-white">Icon</Label>
+                <Select value={sceneIcon} onValueChange={setSceneIcon}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectItem value="zap" className="text-white">Lightning</SelectItem>
+                    <SelectItem value="sun" className="text-white">Sun</SelectItem>
+                    <SelectItem value="moon" className="text-white">Moon</SelectItem>
+                    <SelectItem value="lightbulb" className="text-white">Lightbulb</SelectItem>
+                    <SelectItem value="rainbow" className="text-white">Rainbow</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            <div>
+              <Label className="text-white">Description</Label>
+              <Textarea
+                value={sceneDescription}
+                onChange={(e) => setSceneDescription(e.target.value)}
+                placeholder="Optional description"
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-white">Effect Type</Label>
+                <Select value={sceneType} onValueChange={setSceneType}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectItem value="preset" className="text-white">Preset Effect</SelectItem>
+                    <SelectItem value="custom" className="text-white">Custom JSON</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-white">Preset Effect</Label>
+                <Select disabled={sceneType === 'custom'}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                    <SelectValue placeholder="Select preset" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectItem value="flash" className="text-white">Flash</SelectItem>
+                    <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
+                    <SelectItem value="fade" className="text-white">Fade</SelectItem>
+                    <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
+                    <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {sceneType === 'custom' && (
+              <div>
+                <Label className="text-white">Custom JSON Effect</Label>
+                <Textarea
+                  value={customEffectJson}
+                  onChange={(e) => setCustomEffectJson(e.target.value)}
+                  placeholder="Enter custom JSON effect..."
+                  className="bg-slate-800 border-slate-700 text-white h-32 font-mono text-sm"
+                />
+                <div className="mt-2 text-xs text-slate-400">
+                  <details>
+                    <summary className="cursor-pointer hover:text-slate-300">View JSON example</summary>
+                    <pre className="mt-2 bg-slate-900 p-2 rounded text-xs overflow-x-auto">
+{JSON.stringify(exampleJson, null, 2)}
+                    </pre>
+                  </details>
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 

@@ -1,25 +1,28 @@
 import { useState } from "react";
-import { SoundButton, Scene } from "@shared/schema";
+import { SoundButton, Scene, LightEffect } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 
 interface SoundboardGridProps {
   soundButtons: SoundButton[];
   scenes: Scene[];
+  lightingEffects: LightEffect[];
   onSoundButtonClick: (button: SoundButton) => void;
   onSceneClick: (scene: Scene) => void;
+  onLightingEffectClick: (effect: LightEffect) => void;
   onSceneEdit?: (scene: Scene) => void;
 }
 
-type GridItem = (SoundButton & { type: 'sound' }) | (Scene & { type: 'scene' });
+type GridItem = (SoundButton & { type: 'sound' }) | (Scene & { type: 'scene' }) | (LightEffect & { type: 'lighting' });
 
-export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClick, onSceneClick, onSceneEdit }: SoundboardGridProps) {
+export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, onSoundButtonClick, onSceneClick, onLightingEffectClick, onSceneEdit }: SoundboardGridProps) {
   const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
   
-  // Combine and sort sound buttons and scenes
+  // Combine and sort sound buttons, scenes, and lighting effects
   const allItems: GridItem[] = [
     ...soundButtons.map(button => ({ ...button, type: 'sound' as const })),
-    ...scenes.map(scene => ({ ...scene, type: 'scene' as const }))
+    ...scenes.map(scene => ({ ...scene, type: 'scene' as const })),
+    ...lightingEffects.map(effect => ({ ...effect, type: 'lighting' as const }))
   ].sort((a, b) => a.name.localeCompare(b.name));
   
   const handleItemClick = (item: GridItem) => {
@@ -28,8 +31,10 @@ export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClic
     
     if (item.type === 'sound') {
       onSoundButtonClick(item);
-    } else {
+    } else if (item.type === 'scene') {
       onSceneClick(item);
+    } else if (item.type === 'lighting') {
+      onLightingEffectClick(item);
     }
     
     // Remove active state after 2 seconds
@@ -44,9 +49,11 @@ export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClic
   
   const getItemStyle = (item: GridItem, isActive: boolean) => {
     const baseStyle = "bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition-all duration-200 cursor-pointer group border border-slate-700";
-    const typeStyle = item.type === 'scene' ? "border-l-4 border-l-amber-500" : "";
+    const typeStyle = item.type === 'scene' ? "border-l-4 border-l-amber-500" : 
+                     item.type === 'lighting' ? "border-l-4 border-l-cyan-500" : "";
     
-    const color = item.type === 'sound' ? item.color : 'amber';
+    const color = item.type === 'sound' ? item.color : 
+                 item.type === 'lighting' ? 'cyan' : 'amber';
     const colorMap: { [key: string]: string } = {
       purple: "hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/20",
       green: "hover:border-green-500 hover:shadow-lg hover:shadow-green-500/20",
@@ -67,7 +74,8 @@ export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClic
   };
   
   const getIconBackgroundStyle = (item: GridItem) => {
-    const color = item.type === 'sound' ? item.color : 'amber';
+    const color = item.type === 'sound' ? item.color : 
+                 item.type === 'lighting' ? 'cyan' : 'amber';
     const colorMap: { [key: string]: string } = {
       purple: "bg-gradient-to-br from-purple-500 to-pink-600",
       green: "bg-gradient-to-br from-emerald-500 to-teal-600",

@@ -34,6 +34,10 @@ export default function Soundboard() {
   const { data: scenes = [], refetch: refetchScenes } = useQuery({
     queryKey: ['/api/scenes'],
   });
+
+  const { data: lightingEffects = [], refetch: refetchLightingEffects } = useQuery({
+    queryKey: ['/api/light-effects'],
+  });
   
   useEffect(() => {
     if (devices.length > 0) {
@@ -216,6 +220,32 @@ export default function Soundboard() {
     setIsEditSceneModalOpen(true);
   };
 
+  const handleLightingEffectClick = async (effect: any) => {
+    try {
+      const devices = connectedDevices.filter(d => d.isOnline && d.isAdopted);
+      
+      if (devices.length > 0) {
+        const response = await fetch(`/api/light-effects/${effect.id}/apply`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          sendMessage({
+            type: 'light_effect_applied',
+            payload: { effectId: effect.id }
+          });
+        } else {
+          console.error('Error applying lighting effect:', await response.text());
+        }
+      }
+    } catch (error) {
+      console.error('Error applying lighting effect:', error);
+    }
+  };
+
   const handleSceneUpdate = async (sceneData: any) => {
     if (!editingScene) return;
 
@@ -319,27 +349,19 @@ export default function Soundboard() {
               <SoundboardGrid
                 soundButtons={soundButtons}
                 scenes={scenes}
+                lightingEffects={lightingEffects}
                 onSoundButtonClick={handleSoundButtonClick}
                 onSceneClick={handleSceneClick}
                 onSceneEdit={handleSceneEdit}
+                onLightingEffectClick={handleLightingEffectClick}
               />
             </div>
           </div>
         </div>
         
-        {/* Lighting Effects Panel */}
+        {/* Lighting Controls Panel */}
         <div className={`transition-all duration-300 ${isLightingPanelOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
-          <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
-            <div className="p-4 border-b border-slate-700">
-              <h2 className="text-lg font-semibold text-white flex items-center">
-                <Zap className="w-5 h-5 mr-2" />
-                Lighting Effects
-              </h2>
-            </div>
-            <div className="flex-1 p-4 overflow-y-auto">
-              <LightingEffects />
-            </div>
-          </div>
+          <LightingControls devices={connectedDevices} />
         </div>
       </div>
       
