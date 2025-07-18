@@ -17,8 +17,8 @@ export default function Soundboard() {
   const [editingLightingEffect, setEditingLightingEffect] = useState<LightEffect | null>(null);
   const [globalVolume, setGlobalVolume] = useState(0.8);
   const [connectedDevices, setConnectedDevices] = useState<Device[]>([]);
-  const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(false);
-  const [isLightingPanelOpen, setIsLightingPanelOpen] = useState(false);
+  const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(true);
+  const [isLightingPanelOpen, setIsLightingPanelOpen] = useState(true);
   const [availableLightingEffects, setAvailableLightingEffects] = useState<any[]>([]);
 
   
@@ -51,6 +51,30 @@ export default function Soundboard() {
   useEffect(() => {
     setMasterVolume(globalVolume);
   }, [globalVolume, setMasterVolume]);
+
+  // Set appropriate default states for mobile vs desktop
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        setIsDevicePanelOpen(false);
+        setIsLightingPanelOpen(false);
+      } else {
+        setIsDevicePanelOpen(true);
+        setIsLightingPanelOpen(true);
+      }
+    };
+
+    // Set initial state based on screen size
+    handleResize();
+    
+    // Listen for resize events
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Listen for close panel events from mobile close buttons
   useEffect(() => {
@@ -394,8 +418,8 @@ export default function Soundboard() {
         {/* Device Management Panel - Mobile: Overlay, Desktop: Sidebar */}
         <div className={`
           z-20
-          md:relative md:block md:w-80 md:transition-all md:duration-300 md:ease-in-out
-          ${isDevicePanelOpen ? 'md:relative' : 'md:w-0'}
+          md:relative md:block md:transition-all md:duration-300 md:ease-in-out
+          ${isDevicePanelOpen ? 'md:w-80' : 'md:w-0'}
         `}>
           {/* Mobile backdrop */}
           {isDevicePanelOpen && (
@@ -406,9 +430,9 @@ export default function Soundboard() {
           )}
           <div 
             className={`
-              fixed inset-0 z-20 h-full transition-transform duration-300 ease-in-out
-              md:relative md:translate-x-0
-              ${isDevicePanelOpen ? 'translate-x-0' : '-translate-x-full'}
+              h-full transition-transform duration-300 ease-in-out
+              md:relative md:translate-x-0 md:overflow-hidden
+              ${isDevicePanelOpen ? 'fixed inset-0 z-20 translate-x-0' : 'fixed inset-0 z-20 -translate-x-full md:translate-x-0'}
             `}
           >
             <DeviceManagement
@@ -453,8 +477,8 @@ export default function Soundboard() {
         {/* Lighting Controls Panel - Mobile: Overlay, Desktop: Sidebar */}
         <div className={`
           z-20
-          md:relative md:block md:w-80 md:transition-all md:duration-300 md:ease-in-out
-          ${isLightingPanelOpen ? 'md:relative' : 'md:w-0'}
+          md:relative md:block md:transition-all md:duration-300 md:ease-in-out
+          ${isLightingPanelOpen ? 'md:w-80' : 'md:w-0'}
         `}>
           {/* Mobile backdrop */}
           {isLightingPanelOpen && (
@@ -465,9 +489,9 @@ export default function Soundboard() {
           )}
           <div 
             className={`
-              fixed inset-0 z-20 h-full transition-transform duration-300 ease-in-out
-              md:relative md:translate-x-0
-              ${isLightingPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+              h-full transition-transform duration-300 ease-in-out
+              md:relative md:translate-x-0 md:overflow-hidden
+              ${isLightingPanelOpen ? 'fixed inset-0 z-20 translate-x-0' : 'fixed inset-0 z-20 translate-x-full md:translate-x-0'}
             `}
           >
             <LightingControls devices={connectedDevices} />
