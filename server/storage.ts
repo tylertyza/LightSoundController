@@ -12,6 +12,7 @@ export interface IStorage {
   createDevice(device: InsertDevice): Promise<Device>;
   updateDevice(id: number, updates: Partial<Device>): Promise<Device | undefined>;
   deleteDevice(id: number): Promise<boolean>;
+  getOnlineDevices(): Promise<Device[]>;
   
   // Sound buttons
   getSoundButtons(): Promise<SoundButton[]>;
@@ -165,6 +166,10 @@ export class MemStorage implements IStorage {
 
   async deleteDevice(id: number): Promise<boolean> {
     return this.devices.delete(id);
+  }
+
+  async getOnlineDevices(): Promise<Device[]> {
+    return Array.from(this.devices.values()).filter(device => device.isOnline);
   }
 
   async getSoundButtons(): Promise<SoundButton[]> {

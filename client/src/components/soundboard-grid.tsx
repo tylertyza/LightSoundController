@@ -129,6 +129,8 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
   const getSceneColors = (scene: any) => {
     // Extract colors from scene data for gradient
     const colors = [];
+    
+    // Check for device-specific settings first
     if (scene.deviceSettings) {
       Object.values(scene.deviceSettings).forEach((setting: any) => {
         if (setting.color) {
@@ -136,6 +138,19 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
         }
       });
     }
+    
+    // Fallback to configuration color if no device settings
+    if (colors.length === 0 && scene.configuration?.color) {
+      colors.push(`from-[${scene.configuration.color}]`);
+    }
+    
+    // Add default colors for gradient if we have some
+    if (colors.length === 1) {
+      colors.push('to-slate-800');
+    } else if (colors.length > 1) {
+      colors.push('to-slate-900');
+    }
+    
     return colors.slice(0, 3); // Limit to 3 colors for gradient
   };
   

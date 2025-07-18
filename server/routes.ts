@@ -625,5 +625,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/light-effects/:id/apply', async (req, res) => {
+    try {
+      const effectId = parseInt(req.params.id);
+      const effect = await storage.getLightEffect(effectId);
+      
+      if (!effect) {
+        return res.status(404).json({ error: 'Light effect not found' });
+      }
+
+      // Get all adopted devices if no specific devices are targeted
+      const onlineDevices = await storage.getOnlineDevices();
+      const targetDevices = onlineDevices.filter(d => d.isAdopted);
+      
+      if (targetDevices.length === 0) {
+        return res.status(400).json({ error: 'No adopted devices available' });
+      }
+
+      // Apply the effect to all adopted devices
+      for (const device of targetDevices) {
+        lifxService.triggerEffect(device.mac, device.ip, effect.type, effect.duration);
+      }
+
+      broadcast({ type: 'light_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id) } });
+      res.json({ message: 'Light effect applied successfully' });
+    } catch (error) {
+      console.error('Error applying light effect:', error);
+      res.status(500).json({ error: 'Failed to apply light effect' });
+    }
+  });
+
   return httpServer;
 }
