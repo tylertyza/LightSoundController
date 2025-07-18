@@ -589,8 +589,8 @@ export default function Soundboard() {
                   : 'text-slate-300 hover:text-white'
               }`}
             >
-              <i className="fas fa-router mr-1"></i>
-              Settings
+              <i className="fas fa-cogs mr-1"></i>
+              Device Lab
             </button>
             <button
               onClick={() => {
@@ -603,8 +603,8 @@ export default function Soundboard() {
                   : 'text-slate-300 hover:text-white'
               }`}
             >
-              <i className="fas fa-th-large mr-1"></i>
-              Dashboard
+              <i className="fas fa-music mr-1"></i>
+              Sound Stage
             </button>
             <button
               onClick={() => {
@@ -617,8 +617,8 @@ export default function Soundboard() {
                   : 'text-slate-300 hover:text-white'
               }`}
             >
-              <i className="fas fa-palette mr-1"></i>
-              Lighting
+              <i className="fas fa-magic mr-1"></i>
+              Light Studio
             </button>
           </div>
         </div>

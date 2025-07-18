@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **Mobile Bottom Navigation** (July 18, 2025): Added fixed bottom navigation pill for mobile with three buttons: Settings (devices), Dashboard (main view), and Lighting controls. Desktop keeps arrow icons in header. Mobile navigation has blue active state indicators, proper touch targets, and adequate spacing to prevent content overlap
+- **Mobile Bottom Navigation** (July 18, 2025): Added fixed bottom navigation pill for mobile with three creatively named buttons: Device Lab (device management), Sound Stage (main soundboard), and Light Studio (lighting controls). Fixed missing settings icon and used more intuitive icons. Desktop keeps arrow icons in header. Mobile navigation has blue active state indicators, proper touch targets, and adequate spacing to prevent content overlap
 - **Mobile Interface Bug Fixes** (July 18, 2025): Fixed mobile panel issues with improved scrolling, less sensitive dismissal behavior, and replaced confusing arrow icons with relevant panel icons (router for device management, palette for lighting controls). Enhanced touch handling with proper pan-y behavior for better mobile experience
 - **Lighting Effects Improvements** (July 18, 2025): Fixed exact duration progress bars based on steps, fade times, and loops. Added device state saving and restoration after effects finish. Fixed mobile single-tap activation for lighting effects. Improved device status updates to include power state. Removed infinite loop effects from sound creation dropdown
 - **Modal Tab Text Color Fix** (July 18, 2025): Fixed black text on active tabs in modal by adding explicit white text color override for active tab states
