@@ -546,10 +546,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const brightness = specificSettings?.brightness || config.brightness || 100;
           const color = specificSettings?.color || config.color;
           const temperature = config.temperature || 3500;
-          
-          if (brightness !== undefined) {
-            lifxService.setBrightness(device.mac, device.ip, brightness);
-          }
+          const fadeInDuration = config.fadeIn || 0;
+          const fadeOutDuration = config.fadeOut || 0;
           
           if (color) {
             const colorHsb = hexToHsb(color);
@@ -558,16 +556,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               saturation: colorHsb.saturation,
               brightness: Math.round(brightness / 100 * 65535),
               kelvin: temperature
-            });
-          }
-          
-          if (temperature !== undefined && !color) {
+            }, fadeInDuration);
+          } else if (temperature !== undefined) {
             lifxService.setColor(device.mac, device.ip, {
               hue: 0,
               saturation: 0,
               brightness: Math.round(brightness / 100 * 65535),
               kelvin: temperature
-            });
+            }, fadeInDuration);
+          } else if (brightness !== undefined) {
+            lifxService.setBrightness(device.mac, device.ip, brightness, fadeInDuration);
           }
           
           // Update device state in storage

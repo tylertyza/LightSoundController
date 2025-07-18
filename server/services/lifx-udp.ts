@@ -31,12 +31,17 @@ export class LifxUDPService extends EventEmitter {
   private sequence = 0;
   private source: number;
   private discoveredDevices: Map<string, Device> = new Map();
+  private connectionTimeout: NodeJS.Timeout | null = null;
+  private isConnected = false;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
 
   constructor() {
     super();
     this.socket = createSocket('udp4');
     this.source = Math.floor(Math.random() * 0xFFFFFFFF);
     this.setupSocket();
+    this.setupConnectionMonitoring();
   }
 
   private setupSocket() {
@@ -44,6 +49,9 @@ export class LifxUDPService extends EventEmitter {
       try {
         const packet = this.parsePacket(msg);
         this.handlePacket(packet, rinfo);
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+        this.resetConnectionTimeout();
       } catch (error) {
         console.error('Error parsing LIFX packet:', error);
       }
@@ -51,13 +59,63 @@ export class LifxUDPService extends EventEmitter {
 
     this.socket.on('error', (error) => {
       console.error('UDP socket error:', error);
+      this.isConnected = false;
       this.emit('error', error);
+      this.attemptReconnect();
+    });
+
+    this.socket.on('close', () => {
+      console.log('UDP socket closed');
+      this.isConnected = false;
+      this.attemptReconnect();
     });
 
     this.socket.bind(() => {
       this.socket.setBroadcast(true);
+      this.isConnected = true;
       console.log('LIFX UDP service listening on port', this.port);
     });
+  }
+
+  private setupConnectionMonitoring() {
+    // Monitor connection and reconnect if needed
+    setInterval(() => {
+      if (!this.isConnected && this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.attemptReconnect();
+      }
+    }, 30000); // Check every 30 seconds
+  }
+
+  private resetConnectionTimeout() {
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+    }
+    this.connectionTimeout = setTimeout(() => {
+      if (this.isConnected) {
+        console.log('Connection timeout detected, attempting to reconnect...');
+        this.isConnected = false;
+        this.attemptReconnect();
+      }
+    }, 60000); // 1 minute timeout
+  }
+
+  private attemptReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('Max reconnection attempts reached, giving up');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+    try {
+      this.socket.close();
+      this.socket = createSocket('udp4');
+      this.setupSocket();
+    } catch (error) {
+      console.error('Error during reconnection:', error);
+      setTimeout(() => this.attemptReconnect(), 5000);
+    }
   }
 
   private parsePacket(buffer: Buffer): LifxPacket {
@@ -203,9 +261,17 @@ export class LifxUDPService extends EventEmitter {
   }
 
   private sendPacket(packet: Buffer, address: string = this.broadcastAddress) {
+    if (!this.isConnected) {
+      console.warn('Socket not connected, attempting to reconnect...');
+      this.attemptReconnect();
+      return;
+    }
+
     this.socket.send(packet, this.port, address, (error) => {
       if (error) {
         console.error('Error sending packet:', error);
+        this.isConnected = false;
+        this.attemptReconnect();
       }
     });
   }
@@ -352,6 +418,10 @@ export class LifxUDPService extends EventEmitter {
   }
 
   public close() {
+    if (this.connectionTimeout) {
+      clearTimeout(this.connectionTimeout);
+    }
+    this.isConnected = false;
     this.socket.close();
   }
 }
