@@ -380,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/sound-buttons', upload.single('audio'), async (req, res) => {
     try {
-      const { name, description, lightEffect, color, icon, targetDevices, customJson } = req.body;
+      const { name, description, lightEffect, color, icon, volume } = req.body;
       const audioFile = req.file;
       
       if (!audioFile) {
@@ -397,8 +397,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lightEffect,
         color,
         icon,
-        targetDevices: targetDevices ? JSON.parse(targetDevices) : [],
-        customJson: customJson ? JSON.parse(customJson) : null
+        volume: volume ? parseInt(volume) : 80,
+        customJson: null
       };
       
       const validatedData = insertSoundButtonSchema.parse(buttonData);

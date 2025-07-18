@@ -19,6 +19,7 @@ export default function Soundboard() {
   const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(true);
   const [isLightingPanelOpen, setIsLightingPanelOpen] = useState(true);
   const [availableLightingEffects, setAvailableLightingEffects] = useState<any[]>([]);
+  const [showLightingEffects, setShowLightingEffects] = useState(true);
   
   const { socket, sendMessage } = useWebSocket();
   const { playSound, setMasterVolume } = useAudio();
@@ -92,27 +93,20 @@ export default function Soundboard() {
     try {
       await playSound(`/api/audio/${button.audioFile}`, button.volume || 80);
       
-      // Trigger lighting effect if custom JSON is available
-      if (button.lightEffect === 'custom' && (button as any).customJson) {
+      // Trigger lighting effect if one is assigned
+      if (button.lightEffect && button.lightEffect !== 'none') {
         const devices = connectedDevices.filter(d => d.isOnline && d.isAdopted);
-        const targetDevices = button.targetDevices && button.targetDevices.length > 0
-          ? devices.filter(d => button.targetDevices!.includes(d.id.toString()))
-          : devices;
         
-        if (targetDevices.length > 0) {
-          const response = await fetch('/api/sound-buttons/custom-effect', {
+        if (devices.length > 0) {
+          const response = await fetch(`/api/light-effects/${button.lightEffect}/apply`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              customEffect: (button as any).customJson,
-              deviceIds: targetDevices.map(d => d.id.toString())
-            }),
           });
           
           if (!response.ok) {
-            console.error('Error applying custom effect:', await response.text());
+            console.error('Error applying light effect:', await response.text());
           }
         }
       }
@@ -175,13 +169,8 @@ export default function Soundboard() {
       formData.append('color', soundData.color);
       formData.append('icon', soundData.icon);
       formData.append('lightEffect', soundData.lightEffect);
-      formData.append('targetDevices', JSON.stringify(soundData.targetDevices));
+      formData.append('volume', soundData.volume.toString());
       formData.append('audio', soundData.audioFile);
-      
-      // Add custom JSON if provided
-      if (soundData.customJson) {
-        formData.append('customJson', JSON.stringify(soundData.customJson));
-      }
 
       const response = await fetch('/api/sound-buttons', {
         method: 'POST',
@@ -363,10 +352,22 @@ export default function Soundboard() {
                 </div>
               </div>
               
+              <div className="mb-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Effects</h3>
+                  <button
+                    onClick={() => setShowLightingEffects(!showLightingEffects)}
+                    className="text-sm text-slate-400 hover:text-white transition-colors"
+                  >
+                    {showLightingEffects ? 'Hide' : 'Show'} Lighting Effects
+                  </button>
+                </div>
+              </div>
+
               <SoundboardGrid
                 soundButtons={soundButtons}
                 scenes={scenes}
-                lightingEffects={lightingEffects}
+                lightingEffects={showLightingEffects ? lightingEffects : []}
                 onSoundButtonClick={handleSoundButtonClick}
                 onSceneClick={handleSceneClick}
                 onSceneEdit={handleSceneEdit}
@@ -389,6 +390,7 @@ export default function Soundboard() {
         onSaveSound={handleSoundSave}
         onSaveScene={handleSceneSave}
         devices={connectedDevices}
+        lightEffects={lightingEffects}
       />
 
       {/* Edit Scene Modal */}
@@ -403,6 +405,7 @@ export default function Soundboard() {
         onDeleteScene={handleSceneDelete}
         devices={connectedDevices}
         editingScene={editingScene}
+        lightEffects={lightingEffects}
       />
     </div>
   );

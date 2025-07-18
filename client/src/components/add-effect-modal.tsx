@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Volume2, Lightbulb, FileText, Zap } from "lucide-react";
-import { Device, InsertSoundButton, InsertScene, Scene, customLightingEffectSchema } from "@shared/schema";
+import { Device, InsertSoundButton, InsertScene, Scene, LightEffect, customLightingEffectSchema } from "@shared/schema";
 import LightingEffects from "./lighting-effects";
 
 interface AddEffectModalProps {
@@ -27,9 +27,10 @@ interface AddEffectModalProps {
   onDeleteScene?: (id: number) => void;
   devices: Device[];
   editingScene?: Scene | null;
+  lightEffects: LightEffect[];
 }
 
-export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDeleteScene, devices, editingScene }: AddEffectModalProps) {
+export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDeleteScene, devices, editingScene, lightEffects }: AddEffectModalProps) {
   const [effectType, setEffectType] = useState<'sound' | 'scene' | 'lighting'>('sound');
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   
@@ -139,21 +140,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
     if (effectType === 'sound') {
       if (!soundName || !soundFile) return;
       
-      // Check if sound effect uses custom JSON
-      let customJson = null;
-      let lightEffect = soundLightEffect;
-      
-      if (soundLightEffect === 'custom') {
-        if (!customEffectJson) return;
-        try {
-          const parsedJson = JSON.parse(customEffectJson);
-          const validated = customLightingEffectSchema.parse(parsedJson);
-          customJson = validated;
-        } catch (error) {
-          console.error('Invalid custom JSON:', error);
-          return;
-        }
-      }
+      // Sound effects reference existing lighting effects
+      const lightEffect = soundLightEffect;
       
       onSaveSound({
         name: soundName,
@@ -163,7 +151,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         color: soundColor,
         icon: soundIcon,
         volume: soundVolume,
-        customJson,
+        customJson: null,
       });
     } else if (effectType === 'lighting') {
       if (!sceneName) return;
@@ -393,11 +381,12 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
                     <SelectValue placeholder="Select a lighting effect" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="flash" className="text-white">Flash</SelectItem>
-                    <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
-                    <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
-                    <SelectItem value="fade" className="text-white">Fade</SelectItem>
-                    <SelectItem value="custom" className="text-white">Custom JSON</SelectItem>
+                    <SelectItem value="none" className="text-white">No lighting effect</SelectItem>
+                    {lightEffects.map((effect) => (
+                      <SelectItem key={effect.id} value={effect.id.toString()} className="text-white">
+                        {effect.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -699,29 +688,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
           </TabsContent>
         </Tabs>
 
-        {/* Custom JSON for sound effects */}
-        {effectType === 'sound' && soundLightEffect === 'custom' && (
-          <div className="space-y-4">
-            <div>
-              <Label className="text-white">Custom JSON Lighting Effect</Label>
-              <Textarea
-                value={customEffectJson}
-                onChange={(e) => setCustomEffectJson(e.target.value)}
-                placeholder="Enter custom JSON lighting effect..."
-                className="bg-slate-800 border-slate-700 text-white h-32 font-mono text-sm"
-              />
-              <div className="mt-2 text-xs text-slate-400">
-                <details>
-                  <summary className="cursor-pointer hover:text-slate-300">View example JSON</summary>
-                  <pre className="mt-2 bg-slate-900 p-2 rounded text-xs overflow-x-auto">
-{JSON.stringify(exampleSteps, null, 2)}
-                  </pre>
-                </details>
-                <p className="mt-2">The effect will be applied to all adopted devices automatically.</p>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" onClick={handleClose} className="border-slate-700 text-slate-400">

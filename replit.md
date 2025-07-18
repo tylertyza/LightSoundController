@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Simplified Sound Effects System** (July 18, 2025): Sound effects now only reference existing lighting effects from the Lighting Effects panel. Added toggle to hide/show lighting effects on the soundboard. This creates better separation of concerns where lighting effects are managed centrally
 - **Sound Effects Volume Control** (July 18, 2025): Added individual volume control for each sound effect with blue progress slider. Removed per-device settings for sound effects as lighting effects are now applied globally
 - **Enhanced Device Selection System** (July 18, 2025): Added checkboxes for adopted devices with visual selection feedback. Multi-device control of brightness, color, and temperature with current value displays
 - **Improved Slider Visual Feedback** (July 18, 2025): Enhanced slider styling with blue progress indicators that follow the dot position for better visual feedback
