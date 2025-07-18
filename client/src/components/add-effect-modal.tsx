@@ -64,14 +64,31 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
     if (effectType === 'sound') {
       if (!soundName || !soundFile) return;
       
+      // Check if sound effect uses custom JSON
+      let customJson = null;
+      let lightEffect = soundLightEffect;
+      
+      if (soundLightEffect === 'custom') {
+        if (!customEffectJson) return;
+        try {
+          const parsedJson = JSON.parse(customEffectJson);
+          const validated = customLightingEffectSchema.parse(parsedJson);
+          customJson = validated;
+        } catch (error) {
+          console.error('Invalid custom JSON:', error);
+          return;
+        }
+      }
+      
       onSaveSound({
         name: soundName,
         description: soundDescription || undefined,
         audioFile: soundFile,
-        lightEffect: soundLightEffect,
+        lightEffect: lightEffect,
         color: soundColor,
         icon: soundIcon,
         targetDevices: selectedDevices,
+        customJson,
       });
     } else {
       if (!sceneName) return;
@@ -194,11 +211,11 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
 
         <Tabs value={effectType} onValueChange={(value) => setEffectType(value as 'sound' | 'scene')}>
           <TabsList className="grid w-full grid-cols-2 bg-slate-800">
-            <TabsTrigger value="sound" className="data-[state=active]:bg-slate-700">
+            <TabsTrigger value="sound" className="data-[state=active]:bg-slate-700 text-white">
               <Volume2 className="w-4 h-4 mr-2" />
               Sound Effect
             </TabsTrigger>
-            <TabsTrigger value="scene" className="data-[state=active]:bg-slate-700">
+            <TabsTrigger value="scene" className="data-[state=active]:bg-slate-700 text-white">
               <Lightbulb className="w-4 h-4 mr-2" />
               Lighting Scene
             </TabsTrigger>
@@ -222,11 +239,11 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="volume-2">Volume</SelectItem>
-                    <SelectItem value="music">Music</SelectItem>
-                    <SelectItem value="zap">Zap</SelectItem>
-                    <SelectItem value="bell">Bell</SelectItem>
-                    <SelectItem value="megaphone">Megaphone</SelectItem>
+                    <SelectItem value="volume-2" className="text-white">Volume</SelectItem>
+                    <SelectItem value="music" className="text-white">Music</SelectItem>
+                    <SelectItem value="zap" className="text-white">Zap</SelectItem>
+                    <SelectItem value="bell" className="text-white">Bell</SelectItem>
+                    <SelectItem value="megaphone" className="text-white">Megaphone</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -260,21 +277,74 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
                 </div>
               </div>
               <div>
-                <Label className="text-white">Light Effect</Label>
+                <Label className="text-white">Lighting Effect</Label>
                 <Select value={soundLightEffect} onValueChange={setSoundLightEffect}>
                   <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="flash">Flash</SelectItem>
-                    <SelectItem value="strobe">Strobe</SelectItem>
-                    <SelectItem value="fade">Fade</SelectItem>
-                    <SelectItem value="breathe">Breathe</SelectItem>
-                    <SelectItem value="cycle">Color Cycle</SelectItem>
+                    <SelectItem value="flash" className="text-white">Flash</SelectItem>
+                    <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
+                    <SelectItem value="fade" className="text-white">Fade</SelectItem>
+                    <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
+                    <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
+                    <SelectItem value="custom" className="text-white">Custom JSON Effect</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
+
+            {/* Custom JSON Effect for Sound */}
+            {soundLightEffect === 'custom' && (
+              <div className="space-y-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
+                <div className="flex items-center space-x-2">
+                  <Lightbulb className="w-4 h-4 text-amber-400" />
+                  <Label className="text-white">Custom Lighting Effect</Label>
+                </div>
+                
+                <div>
+                  <Label className="text-white">Upload JSON File</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="file"
+                      accept=".json"
+                      onChange={(e) => handleFileUpload(e, 'custom')}
+                      className="bg-slate-800 border-slate-700 text-white"
+                    />
+                    {customEffectFile && (
+                      <Badge variant="outline" className="text-green-400 border-green-400">
+                        {customEffectFile.name}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-white">Custom Effect JSON</Label>
+                  <Textarea
+                    value={customEffectJson}
+                    onChange={(e) => setCustomEffectJson(e.target.value)}
+                    placeholder="Paste your custom lighting effect JSON here..."
+                    className="bg-slate-800 border-slate-700 text-white font-mono text-sm"
+                    rows={6}
+                  />
+                </div>
+                
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white text-sm flex items-center">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Example JSON Structure
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <pre className="text-slate-300 text-xs overflow-x-auto">
+                      {JSON.stringify(exampleJson, null, 2)}
+                    </pre>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             <div>
               <Label className="text-white">Audio File</Label>
@@ -312,15 +382,15 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="lightbulb">Lightbulb</SelectItem>
-                    <SelectItem value="sun">Sun</SelectItem>
-                    <SelectItem value="moon">Moon</SelectItem>
-                    <SelectItem value="zap">Lightning</SelectItem>
-                    <SelectItem value="rainbow">Rainbow</SelectItem>
-                    <SelectItem value="film">Film</SelectItem>
-                    <SelectItem value="brain">Focus</SelectItem>
-                    <SelectItem value="glass-cheers">Party</SelectItem>
-                    <SelectItem value="leaf">Relax</SelectItem>
+                    <SelectItem value="lightbulb" className="text-white">Lightbulb</SelectItem>
+                    <SelectItem value="sun" className="text-white">Sun</SelectItem>
+                    <SelectItem value="moon" className="text-white">Moon</SelectItem>
+                    <SelectItem value="zap" className="text-white">Lightning</SelectItem>
+                    <SelectItem value="rainbow" className="text-white">Rainbow</SelectItem>
+                    <SelectItem value="film" className="text-white">Film</SelectItem>
+                    <SelectItem value="brain" className="text-white">Focus</SelectItem>
+                    <SelectItem value="glass-cheers" className="text-white">Party</SelectItem>
+                    <SelectItem value="leaf" className="text-white">Relax</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -340,8 +410,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               <Label className="text-white">Effect Type</Label>
               <Tabs value={sceneType} onValueChange={(value) => setSceneType(value as 'preset' | 'custom')}>
                 <TabsList className="grid w-full grid-cols-2 bg-slate-800">
-                  <TabsTrigger value="preset">Preset Effects</TabsTrigger>
-                  <TabsTrigger value="custom">Custom JSON</TabsTrigger>
+                  <TabsTrigger value="preset" className="text-white">Preset Effects</TabsTrigger>
+                  <TabsTrigger value="custom" className="text-white">Custom JSON</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="preset" className="space-y-4">
@@ -353,11 +423,11 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-800 border-slate-700">
-                          <SelectItem value="breathe">Breathe</SelectItem>
-                          <SelectItem value="pulse">Pulse</SelectItem>
-                          <SelectItem value="strobe">Strobe</SelectItem>
-                          <SelectItem value="fade">Fade</SelectItem>
-                          <SelectItem value="cycle">Color Cycle</SelectItem>
+                          <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
+                          <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
+                          <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
+                          <SelectItem value="fade" className="text-white">Fade</SelectItem>
+                          <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

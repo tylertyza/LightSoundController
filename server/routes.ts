@@ -368,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post('/api/sound-buttons', upload.single('audio'), async (req, res) => {
     try {
-      const { name, description, lightEffect, color, icon, targetDevices } = req.body;
+      const { name, description, lightEffect, color, icon, targetDevices, customJson } = req.body;
       const audioFile = req.file;
       
       if (!audioFile) {
@@ -385,7 +385,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lightEffect,
         color,
         icon,
-        targetDevices: targetDevices ? JSON.parse(targetDevices) : []
+        targetDevices: targetDevices ? JSON.parse(targetDevices) : [],
+        customJson: customJson ? JSON.parse(customJson) : null
       };
       
       const validatedData = insertSoundButtonSchema.parse(buttonData);
@@ -398,6 +399,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ error: 'Failed to create sound button' });
       }
+    }
+  });
+
+  app.post('/api/sound-buttons/custom-effect', async (req, res) => {
+    try {
+      const { customEffect, deviceIds } = req.body;
+      
+      for (const deviceId of deviceIds) {
+        await lifxService.applyCustomEffect(deviceId, customEffect);
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error applying custom effect:', error);
+      res.status(500).json({ error: 'Failed to apply custom effect' });
     }
   });
   

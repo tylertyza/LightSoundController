@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Custom JSON Effects for Sound Buttons** (July 18, 2025): Added support for custom JSON lighting effects in sound buttons with UI improvements
 - **Docker Deployment Support** (July 17, 2025): Added complete Docker containerization with multi-stage builds, health checks, and deployment scripts
 - **Collapsible Panels Feature**: Implemented smooth animations for hiding/showing device management and lighting control panels
 - **Git Repository Preparation**: Created comprehensive README.md and proper .gitignore for version control
@@ -41,8 +42,8 @@ Preferred communication style: Simple, everyday language.
 ### Database Schema (Drizzle ORM)
 - **Users**: Basic user authentication system
 - **Devices**: LIFX device management with IP, MAC, and status tracking
-- **Sound Buttons**: Configurable sound effects with associated lighting behaviors
-- **Scenes**: Predefined lighting configurations
+- **Sound Buttons**: Configurable sound effects with associated lighting behaviors and custom JSON effects support
+- **Scenes**: Predefined lighting configurations with custom JSON effects support
 - **Light Effects**: Reusable lighting effect templates
 
 ### Core Services
@@ -54,8 +55,9 @@ Preferred communication style: Simple, everyday language.
 - **Soundboard Grid**: Interactive grid of sound effect buttons with color-coded themes
 - **Device Management**: LIFX device discovery and control interface (collapsible)
 - **Lighting Controls**: Color, brightness, and effect management (collapsible)
-- **Audio Upload Modal**: File upload and sound button configuration
+- **Add Effect Modal**: Unified modal for creating sound buttons and lighting scenes with custom JSON effects
 - **Collapsible Panels**: Smooth animations for hiding/showing side panels
+- **Custom JSON Effects**: Support for advanced lighting effects with brightness, color, timing, and easing controls
 
 ## Data Flow
 

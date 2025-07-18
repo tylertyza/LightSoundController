@@ -81,6 +81,32 @@ export default function Soundboard() {
   const handleSoundButtonClick = async (button: SoundButton) => {
     try {
       await playSound(`/api/audio/${button.audioFile}`);
+      
+      // Trigger lighting effect if custom JSON is available
+      if (button.lightEffect === 'custom' && (button as any).customJson) {
+        const devices = connectedDevices.filter(d => d.isOnline && d.isAdopted);
+        const targetDevices = button.targetDevices && button.targetDevices.length > 0
+          ? devices.filter(d => button.targetDevices!.includes(d.id.toString()))
+          : devices;
+        
+        if (targetDevices.length > 0) {
+          const response = await fetch('/api/sound-buttons/custom-effect', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              customEffect: (button as any).customJson,
+              deviceIds: targetDevices.map(d => d.id.toString())
+            }),
+          });
+          
+          if (!response.ok) {
+            console.error('Error applying custom effect:', await response.text());
+          }
+        }
+      }
+      
       sendMessage({
         type: 'play_sound',
         payload: { buttonId: button.id }
@@ -141,6 +167,11 @@ export default function Soundboard() {
       formData.append('lightEffect', soundData.lightEffect);
       formData.append('targetDevices', JSON.stringify(soundData.targetDevices));
       formData.append('audio', soundData.audioFile);
+      
+      // Add custom JSON if provided
+      if (soundData.customJson) {
+        formData.append('customJson', JSON.stringify(soundData.customJson));
+      }
 
       const response = await fetch('/api/sound-buttons', {
         method: 'POST',
