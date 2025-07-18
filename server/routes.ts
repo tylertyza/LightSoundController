@@ -291,11 +291,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Device not found' });
       }
       
+      // Send power command to LIFX device
       lifxService.setPower(device.mac, device.ip, power);
-      const updatedDevice = await storage.updateDevice(deviceId, { power });
+      
+      // Update device in storage
+      const updatedDevice = await storage.updateDevice(deviceId, { 
+        power,
+        lastSeen: new Date().toISOString()
+      });
+      
+      // Broadcast the update to all connected clients
+      if (updatedDevice) {
+        broadcast({ type: 'device_status', payload: updatedDevice });
+      }
       
       res.json(updatedDevice);
     } catch (error) {
+      console.error('Error updating device power:', error);
       res.status(500).json({ error: 'Failed to update device power' });
     }
   });

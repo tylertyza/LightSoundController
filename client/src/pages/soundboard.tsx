@@ -66,6 +66,7 @@ export default function Soundboard() {
               }
               return [...prev, message.payload];
             });
+            // Force refetch to ensure UI is synchronized
             refetchDevices();
             break;
           case 'sound_played':

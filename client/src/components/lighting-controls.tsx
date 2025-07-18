@@ -25,7 +25,17 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       return response.json();
     },
     onSuccess: () => {
+      // Force a fresh fetch of devices to ensure UI state is correct
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+      queryClient.refetchQueries({ queryKey: ['/api/devices'] });
+    },
+    onError: (error) => {
+      console.error('Power toggle failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to toggle device power",
+        variant: "destructive",
+      });
     },
   });
   
@@ -150,15 +160,22 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                     <span className="text-sm font-medium text-white">{device.label}</span>
                   </div>
                   <button
-                    onClick={() => powerMutation.mutate({ deviceId: device.id, power: !device.power })}
+                    onClick={() => {
+                      console.log(`Toggling power for device ${device.id}: ${device.power} -> ${!device.power}`);
+                      powerMutation.mutate({ deviceId: device.id, power: !device.power });
+                    }}
                     disabled={powerMutation.isPending}
                     className={`text-xs px-2 py-1 rounded transition-colors ${
                       device.power
                         ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                         : 'bg-slate-600 hover:bg-slate-700 text-slate-300'
-                    }`}
+                    } ${powerMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <i className={`fas ${device.power ? 'fa-lightbulb' : 'fa-power-off'}`}></i>
+                    {powerMutation.isPending ? (
+                      <i className="fas fa-spinner fa-spin"></i>
+                    ) : (
+                      <i className={`fas ${device.power ? 'fa-lightbulb' : 'fa-power-off'}`}></i>
+                    )}
                   </button>
                 </div>
               </div>
