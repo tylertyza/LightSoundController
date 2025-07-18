@@ -363,6 +363,9 @@ export class LifxUDPService extends EventEmitter {
     // Save current state before applying effect
     await this.saveDeviceState(target);
 
+    // Clear any command blocking set by a previous effect restore
+    this.blockedUntil.delete(target);
+
     switch (effectType) {
       case 'flash':
         this.flashEffect(target, address, duration);
@@ -588,6 +591,9 @@ export class LifxUDPService extends EventEmitter {
 
     // Save current device state before applying effect
     await this.saveDeviceState(mac);
+
+    // Clear any command blocking set by a previous effect restore
+    this.blockedUntil.delete(mac);
 
     // Create a new cancellation token for this effect
     const cancelToken = { cancelled: false };
