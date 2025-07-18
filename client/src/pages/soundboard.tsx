@@ -353,6 +353,7 @@ export default function Soundboard() {
           headers: {
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ loopCount: 1 }),
         });
         
         if (response.ok) {

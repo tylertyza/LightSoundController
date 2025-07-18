@@ -628,6 +628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/light-effects/:id/apply', async (req, res) => {
     try {
       const effectId = parseInt(req.params.id);
+      const { loopCount = 1 } = req.body;
       const effect = await storage.getLightEffect(effectId);
       
       if (!effect) {
@@ -644,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Apply custom JSON effect if available
       if (effect.customJson) {
-        await applyCustomEffect(effect.customJson, targetDevices);
+        await applyCustomEffect(effect.customJson, targetDevices, loopCount);
       } else {
         // Apply basic effect type
         for (const device of targetDevices) {
@@ -696,17 +697,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Helper function to apply custom JSON effect
-  async function applyCustomEffect(customJson: any, targetDevices: Device[]) {
+  async function applyCustomEffect(customJson: any, targetDevices: Device[], loopCount: number = 1) {
     if (!customJson) {
       console.error('Invalid custom JSON format');
       return;
     }
 
-    console.log('Applying custom effect:', customJson.name || 'Unknown');
+    console.log('Applying custom effect:', customJson.name || 'Unknown', 'with loop count:', loopCount);
     
     // Apply effect to all target devices using the new LIFX service method
     for (const device of targetDevices) {
-      lifxService.applyCustomEffect(device.mac, device.ip, customJson);
+      lifxService.applyCustomEffect(device.mac, device.ip, customJson, loopCount);
     }
   }
 

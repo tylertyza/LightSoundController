@@ -419,11 +419,14 @@ export class LifxUDPService extends EventEmitter {
   }
 
   // New method to handle complex JSON effects
-  public applyCustomEffect(target: string, address: string, effectData: any) {
+  public applyCustomEffect(target: string, address: string, effectData: any, loopCount: number = 1) {
     if (!effectData || !effectData.steps || !Array.isArray(effectData.steps)) {
       console.error('Invalid effect data:', effectData);
       return;
     }
+
+    let currentLoop = 0;
+    const maxLoops = loopCount || 1;
 
     const executeSteps = () => {
       let currentTime = 0;
@@ -440,8 +443,9 @@ export class LifxUDPService extends EventEmitter {
         currentTime += step.duration || 1000;
       });
       
-      // Handle looping
-      if (effectData.loop) {
+      // Handle looping with count limit
+      if (effectData.loop && currentLoop < maxLoops - 1) {
+        currentLoop++;
         setTimeout(() => {
           executeSteps();
         }, currentTime);
