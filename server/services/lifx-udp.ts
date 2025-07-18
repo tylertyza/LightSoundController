@@ -35,6 +35,7 @@ export class LifxUDPService extends EventEmitter {
   private isConnected = false;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private stateUpdateInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     super();
@@ -74,6 +75,7 @@ export class LifxUDPService extends EventEmitter {
       this.socket.setBroadcast(true);
       this.isConnected = true;
       console.log('LIFX UDP service listening on port', this.port);
+      this.startStateUpdateInterval();
     });
   }
 
@@ -539,9 +541,37 @@ export class LifxUDPService extends EventEmitter {
     this.sendPacket(packet, address);
   }
 
+  public getDiscoveredDevices(): Device[] {
+    return Array.from(this.discoveredDevices.values());
+  }
+
+  private startStateUpdateInterval() {
+    // Clear existing interval if any
+    if (this.stateUpdateInterval) {
+      clearInterval(this.stateUpdateInterval);
+    }
+    
+    // Request device states every 2 seconds
+    this.stateUpdateInterval = setInterval(() => {
+      this.requestAllDeviceStates();
+    }, 2000);
+  }
+
+  private requestAllDeviceStates() {
+    for (const device of this.discoveredDevices.values()) {
+      if (device.ip && device.mac) {
+        this.requestDevicePower(device.mac, device.ip);
+        this.requestLightState(device.mac, device.ip);
+      }
+    }
+  }
+
   public close() {
     if (this.connectionTimeout) {
       clearTimeout(this.connectionTimeout);
+    }
+    if (this.stateUpdateInterval) {
+      clearInterval(this.stateUpdateInterval);
     }
     this.isConnected = false;
     this.socket.close();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Device, Scene } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -86,6 +86,10 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Debouncing refs for performance
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdatesRef = useRef<Map<number, any>>(new Map());
+  
   const adoptedDevices = devices.filter(d => d.isAdopted && d.isOnline);
   const selectedDevices = adoptedDevices.filter(d => selectedDeviceIds.includes(d.id));
   
@@ -172,6 +176,25 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   
 
   
+  // Debounced update function
+  const debouncedUpdate = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      const updates = Array.from(pendingUpdatesRef.current.entries());
+      pendingUpdatesRef.current.clear();
+      
+      updates.forEach(([deviceId, colorData]) => {
+        colorMutation.mutate({
+          deviceId,
+          color: colorData
+        });
+      });
+    }, 150); // 150ms debounce delay
+  }, [colorMutation]);
+  
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
     
@@ -199,17 +222,18 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     const saturation = max === 0 ? 0 : diff / max;
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
+    const colorData = { 
+      hue: Math.round(hue / 360 * 65535), 
+      saturation: Math.round(saturation * 65535), 
+      brightness: brightnessValue, 
+      kelvin: 0 // Use color instead of temperature
+    };
+    
     selectedDevices.forEach(device => {
-      colorMutation.mutate({
-        deviceId: device.id,
-        color: { 
-          hue: Math.round(hue / 360 * 65535), 
-          saturation: Math.round(saturation * 65535), 
-          brightness: brightnessValue, 
-          kelvin: 0 // Use color instead of temperature
-        }
-      });
+      pendingUpdatesRef.current.set(device.id, colorData);
     });
+    
+    debouncedUpdate();
   };
   
   const handleBrightnessChange = (newBrightness: number) => {
@@ -219,17 +243,18 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     
     const brightnessValue = Math.round((newBrightness / 100) * 65535);
     
+    const colorData = { 
+      hue: 0, 
+      saturation: 0, 
+      brightness: brightnessValue, 
+      kelvin: 0 // Use brightness only without color or temp
+    };
+    
     selectedDevices.forEach(device => {
-      colorMutation.mutate({
-        deviceId: device.id,
-        color: { 
-          hue: 0, 
-          saturation: 0, 
-          brightness: brightnessValue, 
-          kelvin: 0 // Use brightness only without color or temp
-        }
-      });
+      pendingUpdatesRef.current.set(device.id, colorData);
     });
+    
+    debouncedUpdate();
   };
   
   const handleTemperatureChange = (newTemperature: number) => {
@@ -239,17 +264,18 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
+    const colorData = { 
+      hue: 0, 
+      saturation: 0, // Set to 0 to use white temperature instead of color
+      brightness: brightnessValue, 
+      kelvin: newTemperature 
+    };
+    
     selectedDevices.forEach(device => {
-      colorMutation.mutate({
-        deviceId: device.id,
-        color: { 
-          hue: 0, 
-          saturation: 0, // Set to 0 to use white temperature instead of color
-          brightness: brightnessValue, 
-          kelvin: newTemperature 
-        }
-      });
+      pendingUpdatesRef.current.set(device.id, colorData);
     });
+    
+    debouncedUpdate();
   };
   
   const handleSceneSelect = (sceneId: number) => {
