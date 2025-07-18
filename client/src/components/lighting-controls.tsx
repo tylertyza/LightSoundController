@@ -271,8 +271,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   
   return (
     <div className="w-full md:w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
-      <div className="p-3 md:p-4 border-b border-slate-700"
-           style={{ touchAction: 'pan-y' }}>
+      <div className="p-3 md:p-4 border-b border-slate-700 flex-shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
             <i className="fas fa-magic mr-2"></i>
@@ -288,92 +287,92 @@ export default function LightingControls({ devices }: LightingControlsProps) {
         </div>
       </div>
       
-      {/* Adopted Devices */}
-      <div className="p-3 md:p-4 border-b border-slate-700"
-           style={{ touchAction: 'pan-y' }}>
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <button
-            onClick={() => setIsDevicesCollapsed(!isDevicesCollapsed)}
-            className="flex items-center text-sm font-medium text-slate-300 hover:text-white transition-colors"
-          >
-            <i className={`fas fa-chevron-${isDevicesCollapsed ? 'right' : 'down'} mr-2 text-xs`}></i>
-            Adopted Devices ({adoptedDevices.length})
-          </button>
-          {adoptedDevices.length > 0 && !isDevicesCollapsed && (
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-                className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700 touch-manipulation"
-              >
-                <span className="hidden sm:inline">Select All</span>
-                <span className="sm:hidden">All</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDeselectAll}
-                className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700 touch-manipulation"
-              >
-                Clear
-              </Button>
-            </div>
+      {/* Scrollable Content Container */}
+      <div className="flex-1 overflow-y-auto" style={{ touchAction: 'pan-y' }}>
+        {/* Adopted Devices */}
+        <div className="p-3 md:p-4 border-b border-slate-700">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <button
+              onClick={() => setIsDevicesCollapsed(!isDevicesCollapsed)}
+              className="flex items-center text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            >
+              <i className={`fas fa-chevron-${isDevicesCollapsed ? 'right' : 'down'} mr-2 text-xs`}></i>
+              Adopted Devices ({adoptedDevices.length})
+            </button>
+            {adoptedDevices.length > 0 && !isDevicesCollapsed && (
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700 touch-manipulation"
+                >
+                  <span className="hidden sm:inline">Select All</span>
+                  <span className="sm:hidden">All</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeselectAll}
+                  className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700 touch-manipulation"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+          </div>
+          {!isDevicesCollapsed && (
+            adoptedDevices.length === 0 ? (
+              <div className="text-center py-4">
+                <i className="fas fa-plus-circle text-slate-600 text-2xl mb-2"></i>
+                <p className="text-slate-400 text-sm">No devices adopted</p>
+                <p className="text-slate-500 text-xs mt-1">Adopt devices from the discovery panel to control them here</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {adoptedDevices.map((device) => (
+                  <div
+                    key={device.id}
+                    className={`bg-slate-900 rounded-lg p-2 border transition-colors ${
+                      selectedDeviceIds.includes(device.id) 
+                        ? 'border-blue-500 bg-blue-950' 
+                        : 'border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        <Checkbox
+                          id={`device-${device.id}`}
+                          checked={selectedDeviceIds.includes(device.id)}
+                          onCheckedChange={(checked) => handleDeviceSelection(device.id, checked as boolean)}
+                        />
+                        <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                        <span className="text-sm font-medium text-white truncate">{device.label}</span>
+                      </div>
+                      {/* Status circle showing current light color/brightness */}
+                      <div 
+                        className="w-4 h-4 rounded-full border border-slate-600 flex-shrink-0 ml-2"
+                        style={{ backgroundColor: getDeviceStatusColor(device) }}
+                        title={`${device.power ? 'On' : 'Off'} - ${device.brightness || 100}% brightness`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </div>
-        {!isDevicesCollapsed && (
-          adoptedDevices.length === 0 ? (
-            <div className="text-center py-4">
-              <i className="fas fa-plus-circle text-slate-600 text-2xl mb-2"></i>
-              <p className="text-slate-400 text-sm">No devices adopted</p>
-              <p className="text-slate-500 text-xs mt-1">Adopt devices from the discovery panel to control them here</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {adoptedDevices.map((device) => (
-                <div
-                  key={device.id}
-                  className={`bg-slate-900 rounded-lg p-2 border transition-colors ${
-                    selectedDeviceIds.includes(device.id) 
-                      ? 'border-blue-500 bg-blue-950' 
-                      : 'border-slate-600'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 flex-1 min-w-0">
-                      <Checkbox
-                        id={`device-${device.id}`}
-                        checked={selectedDeviceIds.includes(device.id)}
-                        onCheckedChange={(checked) => handleDeviceSelection(device.id, checked as boolean)}
-                      />
-                      <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
-                      <span className="text-sm font-medium text-white truncate">{device.label}</span>
-                    </div>
-                    {/* Status circle showing current light color/brightness */}
-                    <div 
-                      className="w-4 h-4 rounded-full border border-slate-600 flex-shrink-0 ml-2"
-                      style={{ backgroundColor: getDeviceStatusColor(device) }}
-                      title={`${device.power ? 'On' : 'Off'} - ${device.brightness || 100}% brightness`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        )}
-      </div>
       
 
-      
-      {/* Color Control */}
-      <div className="p-3 md:p-4 border-b border-slate-700"
-           style={{ touchAction: 'pan-y' }}>
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h3 className="text-sm font-medium text-slate-300">Color & Brightness</h3>
-          <div className="text-xs text-slate-400">
-            {selectedDeviceIds.length === 0 ? 'Select devices above' : `${selectedDeviceIds.length} device${selectedDeviceIds.length > 1 ? 's' : ''} selected`}
+        
+        {/* Color Control */}
+        <div className="p-3 md:p-4 border-b border-slate-700">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h3 className="text-sm font-medium text-slate-300">Color & Brightness</h3>
+            <div className="text-xs text-slate-400">
+              {selectedDeviceIds.length === 0 ? 'Select devices above' : `${selectedDeviceIds.length} device${selectedDeviceIds.length > 1 ? 's' : ''} selected`}
+            </div>
           </div>
-        </div>
 
         {/* Power Toggle */}
         {selectedDeviceIds.length > 0 && (
@@ -467,11 +466,13 @@ export default function LightingControls({ devices }: LightingControlsProps) {
             <span className="sm:hidden">Cool</span>
           </div>
         </div>
+        </div>
+        
+        {/* Lighting Effects */}
+        <div className="border-t border-slate-700">
+          <LightingEffects devices={devices} />
+        </div>
       </div>
-      
-
-      
-
     </div>
   );
 }
