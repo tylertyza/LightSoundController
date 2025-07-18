@@ -550,6 +550,8 @@ export class LifxUDPService extends EventEmitter {
   // New method to handle complex JSON effects
   public async applyCustomEffect(deviceIdStr: string, mac: string, ip: string, effectData: any, loopCount: number = 1) {
     console.log('[applyCustomEffect] Received effectData:', JSON.stringify(effectData));
+    // Clear busy flag from any recently stopped effect so new effects aren't ignored
+    this.busyDevices.delete(mac);
     if (this.busyDevices.has(mac)) {
       console.log(`[applyCustomEffect] Device ${mac} is busy, ignoring new effect request at ${new Date().toISOString()}`);
       return;
