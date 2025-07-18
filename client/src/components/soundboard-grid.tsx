@@ -21,6 +21,7 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
   const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
   const [persistentActiveItems, setPersistentActiveItems] = useState<Set<string>>(new Set());
   const [progressItems, setProgressItems] = useState<Map<string, number>>(new Map());
+  const [touchHandled, setTouchHandled] = useState<Set<string>>(new Set());
   
   // Separate items by type
   const soundItems = soundButtons.map(button => ({ ...button, type: 'sound' as const }));
@@ -367,15 +368,35 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
                 className={getItemStyle(item, isActive, isPersistent)}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleItemClick(item);
+                  const itemKey = `${item.type}-${item.id}`;
+                  // Only handle click if touch wasn't already handled
+                  if (!touchHandled.has(itemKey)) {
+                    handleItemClick(item);
+                  }
+                  // Clear touch handled flag after a short delay
+                  setTimeout(() => {
+                    setTouchHandled(prev => {
+                      const newSet = new Set(prev);
+                      newSet.delete(itemKey);
+                      return newSet;
+                    });
+                  }, 100);
                 }}
                 onTouchStart={(e) => {
                   // Allow default touch behavior for proper mobile interaction
                   e.stopPropagation();
                 }}
                 onTouchEnd={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
+                  const itemKey = `${item.type}-${item.id}`;
+                  // Mark this item as touch handled
+                  setTouchHandled(prev => new Set(prev).add(itemKey));
                   handleItemClick(item);
+                  // Force blur to deselect the element after touch
+                  if (e.target instanceof HTMLElement) {
+                    e.target.blur();
+                  }
                 }}
               >
                 <div className={`flex ${item.type === 'lighting' ? 'flex-row items-center' : 'flex-col items-center justify-center'} h-full text-center`}>

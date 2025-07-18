@@ -480,7 +480,10 @@ export default function Soundboard() {
         
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 p-3 md:p-6 overflow-y-auto pb-24 md:pb-6">
+          <div className={`flex-1 p-3 md:p-6 pb-24 md:pb-6 ${
+            // Disable scrolling on mobile when any panel is open
+            isDevicePanelOpen || isLightingPanelOpen ? 'md:overflow-y-auto overflow-hidden' : 'overflow-y-auto'
+          }`}>
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h2 className="text-xl md:text-2xl font-bold text-white">LIFX Soundboard</h2>

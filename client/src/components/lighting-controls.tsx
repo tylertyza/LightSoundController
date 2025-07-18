@@ -86,9 +86,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Debouncing refs for performance
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingUpdatesRef = useRef<Map<number, any>>(new Map());
+  // Removed debouncing for immediate updates
   
   const adoptedDevices = devices.filter(d => d.isAdopted && d.isOnline);
   const selectedDevices = adoptedDevices.filter(d => selectedDeviceIds.includes(d.id));
@@ -176,23 +174,12 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   
 
   
-  // Debounced update function
-  const debouncedUpdate = useCallback(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    
-    debounceTimerRef.current = setTimeout(() => {
-      const updates = Array.from(pendingUpdatesRef.current.entries());
-      pendingUpdatesRef.current.clear();
-      
-      updates.forEach(([deviceId, colorData]) => {
-        colorMutation.mutate({
-          deviceId,
-          color: colorData
-        });
-      });
-    }, 150); // Back to 150ms for stability
+  // Immediate update function - no debouncing
+  const updateDeviceColor = useCallback((deviceId: number, colorData: any) => {
+    colorMutation.mutate({
+      deviceId,
+      color: colorData
+    });
   }, [colorMutation]);
   
   const handleColorChange = (color: string) => {
@@ -230,10 +217,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     };
     
     selectedDevices.forEach(device => {
-      pendingUpdatesRef.current.set(device.id, colorData);
+      updateDeviceColor(device.id, colorData);
     });
-    
-    debouncedUpdate();
   };
   
   const handleBrightnessChange = (newBrightness: number) => {
@@ -251,10 +236,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     };
     
     selectedDevices.forEach(device => {
-      pendingUpdatesRef.current.set(device.id, colorData);
+      updateDeviceColor(device.id, colorData);
     });
-    
-    debouncedUpdate();
   };
   
   const handleTemperatureChange = (newTemperature: number) => {
@@ -272,10 +255,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     };
     
     selectedDevices.forEach(device => {
-      pendingUpdatesRef.current.set(device.id, colorData);
+      updateDeviceColor(device.id, colorData);
     });
-    
-    debouncedUpdate();
   };
   
   const handleSceneSelect = (sceneId: number) => {
