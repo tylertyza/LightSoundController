@@ -22,7 +22,7 @@ import LightingEffects from "./lighting-effects";
 interface AddEffectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveSound: (data: InsertSoundButton & { audioFile: File }) => void;
+  onSaveSound: (data: Omit<InsertSoundButton, 'audioFile'> & { audioFile: File }) => void;
   onSaveScene: (data: InsertScene & { turnOnIfOff?: boolean; deviceSettings?: any }) => void;
   onSaveLightingEffect: (data: any) => void; // <-- add this
   onDeleteScene?: (id: number) => void;
@@ -85,7 +85,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
       let jsonData = (editingScene as any).customJson;
       if (!jsonData) {
         // Convert legacy scene to JSON format
-        const config = editingScene.configuration;
+        const config = editingScene.configuration as any;
         jsonData = {
           name: editingScene.name,
           description: editingScene.description || '',
@@ -141,19 +141,19 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
     if (editingLightingEffect) {
       setEffectType('lighting');
       setSceneName(editingLightingEffect.name);
-      setSceneDescription(editingLightingEffect.description || '');
-      setSceneIcon(editingLightingEffect.icon || 'zap');
+      setSceneDescription((editingLightingEffect as any).description || '');
+      setSceneIcon((editingLightingEffect as any).icon || 'zap');
       
       // All effects now show as custom with JSON data
       setSceneType('custom');
       
       // Convert effect to JSON format for editing
-      let jsonData = editingLightingEffect.customJson;
+      let jsonData = editingLightingEffect.customJson as any;
       if (!jsonData) {
         // Convert legacy effect to JSON format
         jsonData = {
           name: editingLightingEffect.name,
-          description: editingLightingEffect.description || '',
+          description: (editingLightingEffect as any).description || '',
           loop: false,
           loopCount: 1,
           globalDelay: 0,
@@ -479,7 +479,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
                     <SelectItem value="none" className="text-white">No lighting effect</SelectItem>
-                    {lightEffects.filter(effect => effect.customJson?.loopCount !== 0).map((effect) => (
+                    {lightEffects.filter(effect => (effect.customJson as any)?.loopCount !== 0).map((effect) => (
                       <SelectItem key={effect.id} value={effect.id.toString()} className="text-white">
                         {effect.name}
                       </SelectItem>
