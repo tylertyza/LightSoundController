@@ -24,38 +24,21 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       const response = await apiRequest("POST", `/api/devices/${deviceId}/power`, { power });
       return response.json();
     },
-    onMutate: async (variables) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/devices'] });
-      
-      // Get current data
-      const previousDevices = queryClient.getQueryData(['/api/devices']);
-      
-      // Optimistically update the data
-      queryClient.setQueryData(['/api/devices'], (oldData: any) => {
-        if (!oldData) return oldData;
-        return oldData.map((device: any) => 
-          device.id === variables.deviceId ? { ...device, power: variables.power } : device
-        );
+    onSuccess: () => {
+      // Refresh devices after successful power change
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+      toast({
+        title: "Success",
+        description: "Device power updated successfully",
       });
-      
-      return { previousDevices };
     },
-    onError: (error, variables, context) => {
-      // Revert optimistic update on error
-      if (context?.previousDevices) {
-        queryClient.setQueryData(['/api/devices'], context.previousDevices);
-      }
+    onError: (error) => {
       console.error('Power toggle failed:', error);
       toast({
         title: "Error",
         description: "Failed to toggle device power",
         variant: "destructive",
       });
-    },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
     },
   });
   
@@ -179,7 +162,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                     <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
                     <span className="text-sm font-medium text-white">{device.label}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
+                    {/* Status Indicator - Shows current power state */}
                     <div className={`px-2 py-1 rounded text-xs font-medium ${
                       device.power 
                         ? 'bg-emerald-600 text-white' 
@@ -188,24 +172,40 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                       <i className={`fas ${device.power ? 'fa-lightbulb' : 'fa-power-off'} mr-1`}></i>
                       {device.power ? 'On' : 'Off'}
                     </div>
-                    <button
-                      onClick={() => {
-                        console.log(`Toggling power for device ${device.id}: ${device.power} -> ${!device.power}`);
-                        powerMutation.mutate({ deviceId: device.id, power: !device.power });
-                      }}
-                      disabled={powerMutation.isPending}
-                      className={`text-xs px-2 py-1 rounded text-white disabled:opacity-50 ${
-                        powerMutation.isPending 
-                          ? 'bg-amber-600' 
-                          : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
-                    >
-                      {powerMutation.isPending ? (
-                        <i className="fas fa-spinner fa-spin"></i>
-                      ) : (
+                    
+                    {/* Power Control Buttons - Independent of status */}
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => {
+                          console.log(`Turning ON device ${device.id} (${device.label})`);
+                          powerMutation.mutate({ deviceId: device.id, power: true });
+                        }}
+                        disabled={powerMutation.isPending || device.power}
+                        className={`text-xs px-2 py-1 rounded text-white disabled:opacity-50 ${
+                          device.power 
+                            ? 'bg-emerald-600 cursor-not-allowed' 
+                            : 'bg-emerald-600 hover:bg-emerald-700'
+                        }`}
+                        title="Turn On"
+                      >
+                        <i className="fas fa-lightbulb"></i>
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log(`Turning OFF device ${device.id} (${device.label})`);
+                          powerMutation.mutate({ deviceId: device.id, power: false });
+                        }}
+                        disabled={powerMutation.isPending || !device.power}
+                        className={`text-xs px-2 py-1 rounded text-white disabled:opacity-50 ${
+                          !device.power 
+                            ? 'bg-slate-600 cursor-not-allowed' 
+                            : 'bg-red-600 hover:bg-red-700'
+                        }`}
+                        title="Turn Off"
+                      >
                         <i className="fas fa-power-off"></i>
-                      )}
-                    </button>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
