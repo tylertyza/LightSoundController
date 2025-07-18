@@ -496,55 +496,23 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-white">Effect Type</Label>
-                <Select value={sceneType} onValueChange={setSceneType}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="preset" className="text-white">Preset Effect</SelectItem>
-                    <SelectItem value="custom" className="text-white">Custom JSON</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-white">Preset Effect</Label>
-                <Select disabled={sceneType === 'custom'}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                    <SelectValue placeholder="Select preset" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="flash" className="text-white">Flash</SelectItem>
-                    <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
-                    <SelectItem value="fade" className="text-white">Fade</SelectItem>
-                    <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
-                    <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div>
+              <Label className="text-white">Custom JSON Effect</Label>
+              <Textarea
+                value={customEffectJson}
+                onChange={(e) => setCustomEffectJson(e.target.value)}
+                placeholder="Enter custom JSON effect..."
+                className="bg-slate-800 border-slate-700 text-white h-32 font-mono text-sm"
+              />
+              <div className="mt-2 text-xs text-slate-400">
+                <details>
+                  <summary className="cursor-pointer hover:text-slate-300">View JSON example</summary>
+                  <pre className="mt-2 bg-slate-900 p-2 rounded text-xs overflow-x-auto">
+{JSON.stringify(exampleJson, null, 2)}
+                  </pre>
+                </details>
               </div>
             </div>
-
-            {sceneType === 'custom' && (
-              <div>
-                <Label className="text-white">Custom JSON Effect</Label>
-                <Textarea
-                  value={customEffectJson}
-                  onChange={(e) => setCustomEffectJson(e.target.value)}
-                  placeholder="Enter custom JSON effect..."
-                  className="bg-slate-800 border-slate-700 text-white h-32 font-mono text-sm"
-                />
-                <div className="mt-2 text-xs text-slate-400">
-                  <details>
-                    <summary className="cursor-pointer hover:text-slate-300">View JSON example</summary>
-                    <pre className="mt-2 bg-slate-900 p-2 rounded text-xs overflow-x-auto">
-{JSON.stringify(exampleJson, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              </div>
-            )}
           </TabsContent>
         </Tabs>
 
