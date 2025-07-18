@@ -223,19 +223,35 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   
   const handleBrightnessChange = (newBrightness: number) => {
     setBrightness(newBrightness);
-    
     if (selectedDeviceIds.length === 0) return;
-    
-    const brightnessValue = Math.round((newBrightness / 100) * 65535);
-    
-    const colorData = { 
-      hue: 0, 
-      saturation: 0, 
-      brightness: brightnessValue, 
-      kelvin: 0 // Use brightness only without color or temp
-    };
-    
     selectedDevices.forEach(device => {
+      const brightnessValue = Math.round((newBrightness / 100) * 65535);
+      let colorData;
+      if ((device.color?.hue ?? 0) !== 0 || (device.color?.saturation ?? 0) !== 0) {
+        // Color mode
+        colorData = {
+          hue: device.color?.hue ?? 0,
+          saturation: device.color?.saturation ?? 0,
+          brightness: brightnessValue,
+          kelvin: 0
+        };
+      } else if ((device.color?.kelvin ?? device.temperature ?? 0) !== 0) {
+        // Temperature mode
+        colorData = {
+          hue: 0,
+          saturation: 0,
+          brightness: brightnessValue,
+          kelvin: device.color?.kelvin ?? device.temperature ?? 0
+        };
+      } else {
+        // Fallback: just update brightness
+        colorData = {
+          hue: 0,
+          saturation: 0,
+          brightness: brightnessValue,
+          kelvin: 0
+        };
+      }
       updateDeviceColor(device.id, colorData);
     });
   };

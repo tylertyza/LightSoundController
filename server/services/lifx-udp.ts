@@ -1,3 +1,6 @@
+// Add at the top of the file to ensure Node.js types are available
+// @ts-ignore
+// <reference types="node" />
 import { createSocket, Socket } from 'dgram';
 import { EventEmitter } from 'events';
 import { Device } from '@shared/schema';
@@ -46,7 +49,7 @@ export class LifxUDPService extends EventEmitter {
   }
 
   private setupSocket() {
-    this.socket.on('message', (msg, rinfo) => {
+    this.socket.on('message', (msg: Buffer, rinfo: any) => {
       try {
         const packet = this.parsePacket(msg);
         this.handlePacket(packet, rinfo);
@@ -58,7 +61,7 @@ export class LifxUDPService extends EventEmitter {
       }
     });
 
-    this.socket.on('error', (error) => {
+    this.socket.on('error', (error: Error) => {
       console.error('UDP socket error:', error);
       this.isConnected = false;
       this.emit('error', error);
@@ -306,6 +309,14 @@ export class LifxUDPService extends EventEmitter {
   }
 
   public setPower(target: string, address: string, power: boolean) {
+    // Block power commands if recently restored or hard cancelled
+    const blocked = this.blockedUntil.get(target);
+    if (blocked && Date.now() < blocked) return;
+    if (this.hardCancelled.has(target)) {
+      console.log(`[setPower] BLOCKED (hardCancelled) for device ${target} at ${new Date().toISOString()}`);
+      return;
+    }
+    console.log(`[setPower] Device: ${target}, Power: ${power}, Time: ${new Date().toISOString()}`);
     const payload = Buffer.alloc(2);
     payload.writeUInt16LE(power ? 65535 : 0, 0);
     const packet = this.createPacket(21, payload, target); // SetPower
@@ -313,6 +324,14 @@ export class LifxUDPService extends EventEmitter {
   }
 
   public setColor(target: string, address: string, color: ColorHSBK, duration: number = 0) {
+    // Block color commands if recently restored or hard cancelled
+    const blocked = this.blockedUntil.get(target);
+    if (blocked && Date.now() < blocked) return;
+    if (this.hardCancelled.has(target)) {
+      console.log(`[setColor] BLOCKED (hardCancelled) for device ${target} at ${new Date().toISOString()}`);
+      return;
+    }
+    console.log(`[setColor] Device: ${target}, Color: ${JSON.stringify(color)}, Duration: ${duration}, Time: ${new Date().toISOString()}`);
     const payload = Buffer.alloc(13);
     payload.writeUInt8(0, 0); // reserved
     payload.writeUInt16LE(color.hue, 1);
@@ -432,27 +451,37 @@ export class LifxUDPService extends EventEmitter {
   private activeEffects: Map<string, NodeJS.Timeout[]> = new Map();
   
   // Store device states before applying effects so we can restore them
-  private savedDeviceStates: Map<string, ColorHSBK & { power: boolean }> = new Map();
+  private savedDeviceStates: Map<string, ColorHSBK & { power: boolean, retryCount?: number }> = new Map();
+  private readonly maxRestoreRetries = 5;
+  private readonly restoreRetryDelay = 2000; // ms
+
+  // Store cancelled effects to prevent further steps from running after stop
+  private cancelledEffects: Set<string> = new Set();
+
+  // Hard cancellation flag for each device
+  private hardCancelled: Set<string> = new Set();
+
+  // Block commands for a short period after restore to prevent race conditions
+  private blockedUntil: Map<string, number> = new Map();
+
+  // Track devices that are currently stopping an effect
+  private busyDevices: Set<string> = new Set();
+
+  // Per-device cancellation tokens for async effect loops
+  private effectCancelTokens: Map<string, { cancelled: boolean }> = new Map();
 
   // Save device state before applying effects
   private async saveDeviceState(target: string) {
     // Only save state if we don't already have it saved (to prevent overwriting during loops)
     if (this.savedDeviceStates.has(target)) {
-      console.log(`Device ${target} already has saved state, skipping save`);
+      // Already saved for this effect session, do not overwrite
       return;
     }
-    
-    // First request fresh device state
     const device = this.discoveredDevices.get(target);
     if (device) {
-      // Request current state before saving
       this.requestLightState(target, device.ip);
       this.requestDevicePower(target, device.ip);
-      
-      // Wait a moment for the state to be updated
       await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Get updated device info
       const updatedDevice = this.discoveredDevices.get(target);
       if (updatedDevice) {
         const state = {
@@ -463,39 +492,52 @@ export class LifxUDPService extends EventEmitter {
           power: updatedDevice.power || false
         };
         this.savedDeviceStates.set(target, state);
-        console.log(`Saved initial state for device ${target}:`, state);
       }
     }
   }
 
-  // Restore device state after stopping effects
-  private restoreDeviceState(target: string, address: string) {
-    const savedState = this.savedDeviceStates.get(target);
-    if (savedState) {
-      console.log(`Restoring state for device ${target}:`, savedState);
-      
-      // Restore power state
-      if (savedState.power !== undefined) {
-        this.setPower(target, address, savedState.power);
-      }
-      
-      // Restore color/brightness with a small delay to ensure power command is processed
-      setTimeout(() => {
-        this.setColor(target, address, {
-          hue: savedState.hue,
-          saturation: savedState.saturation,
-          brightness: savedState.brightness,
-          kelvin: savedState.kelvin
-        }, 500); // 500ms transition back to original state
-      }, 100);
-      
-      // Clean up saved state
-      this.savedDeviceStates.delete(target);
+  // Robustly restore device state after stopping effects
+  private restoreDeviceState(target: string, address: string, retryCount = 0) {
+    const savedState = this.savedDeviceStates.get(target) as ColorHSBK & { power: boolean, retryCount?: number } | undefined;
+    if (!savedState) {
+      return;
     }
+    const device = this.discoveredDevices.get(target);
+    if (!device || !device.ip) {
+      if ((savedState.retryCount || 0) < this.maxRestoreRetries) {
+        const nextRetry = (savedState.retryCount || 0) + 1;
+        this.savedDeviceStates.set(target, { ...savedState, retryCount: nextRetry });
+        setTimeout(() => this.restoreDeviceState(target, address, nextRetry), this.restoreRetryDelay);
+      } else {
+        this.savedDeviceStates.delete(target);
+      }
+      return;
+    }
+    if (savedState.power !== undefined) {
+      this.setPower(target, address, savedState.power);
+    }
+    setTimeout(() => {
+      this.setColor(target, address, {
+        hue: savedState.hue,
+        saturation: savedState.saturation,
+        brightness: savedState.brightness,
+        kelvin: savedState.kelvin
+      }, 500);
+      // Block all further commands for 1.5 seconds after restore
+      this.blockedUntil.set(target, Date.now() + 1500);
+      setTimeout(() => {
+        this.savedDeviceStates.delete(target); // Always clear after restoration
+        this.blockedUntil.delete(target); // Unblock after window
+      }, 1500);
+    }, 100);
   }
 
   // New method to handle complex JSON effects
-  public applyCustomEffect(target: string, address: string, effectData: any, loopCount: number = 1) {
+  public async applyCustomEffect(target: string, address: string, effectData: any, loopCount: number = 1) {
+    if (this.busyDevices.has(target)) {
+      console.log(`[applyCustomEffect] Device ${target} is busy, ignoring new effect request at ${new Date().toISOString()}`);
+      return;
+    }
     if (!effectData || !effectData.steps || !Array.isArray(effectData.steps)) {
       console.error('Invalid effect data:', effectData);
       return;
@@ -504,67 +546,83 @@ export class LifxUDPService extends EventEmitter {
     // Stop any existing effect for this device
     this.stopEffect(target, address);
 
+    // Remove hard cancellation for this target (new effect starts)
+    this.hardCancelled.delete(target);
+
     // Save current device state before applying effect
-    this.saveDeviceState(target);
+    await this.saveDeviceState(target);
+
+    // Create a new cancellation token for this effect
+    const cancelToken = { cancelled: false };
+    this.effectCancelTokens.set(target, cancelToken);
 
     let currentLoop = 0;
     const maxLoops = loopCount || 1;
     const isInfiniteLoop = loopCount === 0;
-    const timeouts: NodeJS.Timeout[] = [];
 
-    const executeSteps = () => {
-      let currentTime = 0;
-      
-      effectData.steps.forEach((step: any, index: number) => {
-        const timeout = setTimeout(() => {
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+    const runSteps = async () => {
+      while (!cancelToken.cancelled && (isInfiniteLoop || currentLoop < maxLoops)) {
+        for (let i = 0; i < effectData.steps.length; i++) {
+          if (cancelToken.cancelled) {
+            console.log(`[effectStep] CANCELLED for device ${target} at step ${i + 1} (token) at ${new Date().toISOString()}`);
+            return;
+          }
+          const step = effectData.steps[i];
+          console.log(`[effectStep] RUNNING for device ${target} at step ${i + 1} at ${new Date().toISOString()}`);
           const color = this.parseColorFromStep(step);
           const duration = step.duration || 1000;
-          
-          console.log(`Applying step ${index + 1}: brightness=${step.brightness}%, color=${step.color}, duration=${duration}ms`);
           this.setColor(target, address, color, duration);
-        }, currentTime);
-        
-        timeouts.push(timeout);
-        currentTime += step.duration || 1000;
-      });
-      
-      // Handle looping with count limit or infinite
-      if (effectData.loop && (isInfiniteLoop || currentLoop < maxLoops - 1)) {
+          await delay(duration);
+        }
         currentLoop++;
-        const loopTimeout = setTimeout(() => {
-          executeSteps();
-        }, currentTime);
-        timeouts.push(loopTimeout);
-      } else if (!effectData.loop || (!isInfiniteLoop && currentLoop >= maxLoops - 1)) {
-        // Effect finished, restore state after completion
-        const restoreTimeout = setTimeout(() => {
-          this.restoreDeviceState(target, address);
-        }, currentTime + 500); // Small delay after effect completes
-        timeouts.push(restoreTimeout);
+      }
+      // After all loops, restore state if not cancelled
+      if (!cancelToken.cancelled) {
+        this.restoreDeviceState(target, address);
       }
     };
-    
-    // Store timeouts for this device so we can stop them later
-    this.activeEffects.set(target, timeouts);
-    executeSteps();
+
+    runSteps();
   }
 
   // Method to stop an active effect
   public stopEffect(target: string, address?: string) {
+    // Mark this device as busy
+    this.busyDevices.add(target);
+    // Mark this effect as cancelled
+    this.cancelledEffects.add(target);
+    // Do NOT set hardCancelled yet
+    // Cancel async effect loop if running
+    const token = this.effectCancelTokens.get(target);
+    if (token) {
+      token.cancelled = true;
+      this.effectCancelTokens.delete(target);
+      console.log(`[stopEffect] Cancelled async effect loop for device ${target} at ${new Date().toISOString()}`);
+    }
     const timeouts = this.activeEffects.get(target);
     if (timeouts) {
+      console.log(`[stopEffect] Clearing ${timeouts.length} timeouts for device ${target} at ${new Date().toISOString()}`);
       timeouts.forEach(timeout => clearTimeout(timeout));
       this.activeEffects.delete(target);
-      console.log(`Stopped effect for device: ${target}`);
-      
-      // Restore previous state if we have address
-      if (address) {
-        // Add a small delay to ensure any pending commands are processed
-        setTimeout(() => {
-          this.restoreDeviceState(target, address);
-        }, 100);
-      }
+    } else {
+      console.log(`[stopEffect] No timeouts to clear for device ${target} at ${new Date().toISOString()}`);
     }
+    // Immediately restore state when stopping
+    if (address) {
+      this.restoreDeviceState(target, address);
+    }
+    // Now set hardCancelled to block any late packets from the old effect
+    this.hardCancelled.add(target);
+    // Remove cancellation flag after a short delay to allow restoration
+    setTimeout(() => {
+      this.cancelledEffects.delete(target);
+      // Do NOT remove hardCancelled here; only remove when a new effect starts
+      // Remove busy flag after stop is complete
+      this.busyDevices.delete(target);
+      console.log(`[stopEffect] Device ${target} is no longer busy at ${new Date().toISOString()}`);
+    }, 2000);
   }
 
   private parseColorFromStep(step: any): ColorHSBK {

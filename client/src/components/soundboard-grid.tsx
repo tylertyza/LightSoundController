@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { SoundButton, Scene, LightEffect } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
@@ -22,6 +22,8 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
   const [persistentActiveItems, setPersistentActiveItems] = useState<Set<string>>(new Set());
   const [progressItems, setProgressItems] = useState<Map<string, number>>(new Map());
   const [touchHandled, setTouchHandled] = useState<Set<string>>(new Set());
+  // Store original device states for looping effects
+  const originalDeviceStates = useRef<Map<string, any>>(new Map());
   
   // Separate items by type
   const soundItems = soundButtons.map(button => ({ ...button, type: 'sound' as const }));
@@ -36,7 +38,8 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
       const isCurrentlyActive = persistentActiveItems.has(itemKey);
       
       if (isCurrentlyActive) {
-        // Turn off this effect
+        // Remove frontend restore logic: do not call restoreState or POST to /api/devices/:id/restore
+        // Just turn off this effect and let the backend handle restoration
         setPersistentActiveItems(new Set());
         setProgressItems(prev => {
           const newMap = new Map(prev);
@@ -46,6 +49,11 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
         // Stop the effect on the server
         onLightingEffectStop(item);
       } else {
+        // Save original device state (parent must provide a callback)
+        if ('saveDeviceState' in item && typeof (item as any).saveDeviceState === 'function') {
+          // Save a restore function in the ref (no longer used for restore)
+          originalDeviceStates.current.set(itemKey, (item as any).saveDeviceState());
+        }
         // Turn on this effect and turn off others
         setPersistentActiveItems(new Set([itemKey]));
         setActiveItems(prev => new Set(prev).add(itemKey));
@@ -54,7 +62,7 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
         
         // Check if it's a timed effect (not infinite loop)
         // Don't show progress bar for infinite loops (loopCount === 0)
-        const isInfiniteLoop = item.customJson?.loopCount === 0;
+        const isInfiniteLoop = (item as any)?.customJson?.loopCount === 0;
         if (!isInfiniteLoop) {
           const effectDuration = calculateEffectDuration(item);
           if (effectDuration > 0) {
@@ -70,7 +78,7 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
       if (item.type === 'sound') {
         onSoundButtonClick(item);
         // Start progress bar for sound effects
-        startProgressBar(itemKey, item.duration || 3000);
+        startProgressBar(itemKey, (item as any)?.duration || 3000);
       } else if (item.type === 'scene') {
         onSceneClick(item);
         // Scenes are persistent until another is selected
@@ -141,25 +149,112 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
     }, 50);
   };
   
+  // Replace getSceneColors with a version that returns both class and style
+  const getSceneGradient = (scene: any) => {
+    let hexColors: string[] = [];
+    let tailwindColors: string[] = [];
+
+    // 1. Try configuration.steps
+    if (scene.configuration) {
+      try {
+        const config = typeof scene.configuration === 'string' ? JSON.parse(scene.configuration) : scene.configuration;
+        if (config.steps && Array.isArray(config.steps)) {
+          config.steps.forEach((step: any) => {
+            if (step.color && /^#[0-9A-Fa-f]{6}$/.test(step.color)) {
+              hexColors.push(step.color);
+            } else if (step.color) {
+              tailwindColors.push(`from-[${step.color}]`);
+            }
+          });
+        }
+        if (config.color && hexColors.length === 0 && /^#[0-9A-Fa-f]{6}$/.test(config.color)) {
+          hexColors.push(config.color);
+        } else if (config.color && tailwindColors.length === 0) {
+          tailwindColors.push(`from-[${config.color}]`);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // 2. Try scene.colors
+    if (hexColors.length === 0 && scene.colors && Array.isArray(scene.colors)) {
+      if (scene.colors.every((c: string) => /^#[0-9A-Fa-f]{6}$/.test(c))) {
+        hexColors = scene.colors;
+      } else {
+        scene.colors.forEach((color: string, idx: number) => {
+          if (idx === 0) tailwindColors.push(`from-[${color}]`);
+          else if (idx === 1) tailwindColors.push(`to-[${color}]`);
+        });
+      }
+    }
+
+    // 3. Try deviceSettings
+    if (hexColors.length === 0 && scene.deviceSettings) {
+      const deviceColors = Object.values(scene.deviceSettings)
+        .map((setting: any) => setting.color)
+        .filter((c: string) => !!c);
+      if (deviceColors.every((c: string) => /^#[0-9A-Fa-f]{6}$/.test(c))) {
+        hexColors = deviceColors as string[];
+      } else {
+        deviceColors.forEach((color: string, idx: number) => {
+          if (idx === 0) tailwindColors.push(`from-[${color}]`);
+          else if (idx === 1) tailwindColors.push(`to-[${color}]`);
+        });
+      }
+    }
+
+    // 4. Fallbacks
+    if (hexColors.length === 0 && tailwindColors.length === 0) {
+      const sceneName = scene.name?.toLowerCase?.() || '';
+      if (sceneName.includes('movie') || sceneName.includes('night') || sceneName.includes('warm')) {
+        tailwindColors.push('from-amber-600');
+      } else if (sceneName.includes('focus') || sceneName.includes('bright') || sceneName.includes('daylight')) {
+        tailwindColors.push('from-blue-200');
+      } else if (sceneName.includes('party') || sceneName.includes('colorful')) {
+        tailwindColors.push('from-purple-500');
+      } else if (sceneName.includes('relax') || sceneName.includes('sunset')) {
+        tailwindColors.push('from-orange-400');
+      } else {
+        tailwindColors.push('from-slate-600');
+      }
+    }
+    if (tailwindColors.length === 1) tailwindColors.push('to-slate-800');
+    else if (tailwindColors.length > 1 && !tailwindColors.some(c => c.startsWith('to-'))) tailwindColors.push('to-slate-900');
+
+    // If we have multiple hex colors, use inline linear-gradient
+    if (hexColors.length > 1) {
+      const stops = hexColors.join(', ');
+      return {
+        className: '',
+        style: { background: `linear-gradient(135deg, ${stops})` }
+      };
+    } else if (hexColors.length === 1) {
+      return {
+        className: '',
+        style: { background: hexColors[0] }
+      };
+    } else {
+      return {
+        className: `bg-gradient-to-br ${tailwindColors.join(' ')}`,
+        style: undefined
+      };
+    }
+  };
+
+  // Update getItemStyle to use getSceneGradient
   const getItemStyle = (item: GridItem, isActive: boolean, isPersistent: boolean) => {
     const itemKey = `${item.type}-${item.id}`;
     const baseStyle = "relative rounded-xl p-2 md:p-4 hover:bg-slate-700 transition-all duration-200 cursor-pointer group border border-slate-700 overflow-hidden touch-manipulation";
-    
-    // Different sizing for lighting effects
     const sizeStyle = item.type === 'lighting' ? "h-16 md:h-20" : "h-24 md:h-32";
-    
-    // Background styles
     let backgroundStyle = "bg-slate-800";
+    let inlineStyle: any = undefined;
     if (item.type === 'scene') {
-      // Generate gradient background based on scene colors
-      const sceneColors = getSceneColors(item);
-      if (sceneColors.length > 0) {
-        backgroundStyle = `bg-gradient-to-br ${sceneColors.join(' ')}`;
-      }
+      const grad = getSceneGradient(item);
+      backgroundStyle = grad.className || "";
+      inlineStyle = grad.style;
     }
-    
-    const color = item.type === 'sound' ? item.color : 
-                 item.type === 'lighting' ? 'cyan' : 'amber';
+    const color = item.type === 'sound' ? item.color : item.type === 'lighting' ? 'cyan' : 'amber';
     const colorMap: { [key: string]: string } = {
       purple: "hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/20",
       green: "hover:border-green-500 hover:shadow-lg hover:shadow-green-500/20",
@@ -172,12 +267,58 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
       lime: "hover:border-lime-500 hover:shadow-lg hover:shadow-lime-500/20",
       amber: "hover:border-amber-500 hover:shadow-lg hover:shadow-amber-500/20",
     };
-    
     const activeStyle = isActive ? "scale-105 shadow-lg shadow-blue-500/50" : "";
     const persistentStyle = isPersistent ? "ring-2 ring-blue-500 ring-opacity-75" : "";
     const hoverStyle = colorMap[color] || "hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20";
-    
-    return `${baseStyle} ${sizeStyle} ${backgroundStyle} ${hoverStyle} ${activeStyle} ${persistentStyle}`;
+    return { className: `${baseStyle} ${sizeStyle} ${backgroundStyle} ${hoverStyle} ${activeStyle} ${persistentStyle}`.trim(), style: inlineStyle };
+  };
+
+  // Helper function to generate status circle color based on device state
+  const getDeviceStatusColor = (device: any) => {
+    if (!device.power) return '#000000';
+    // Prefer RGB color if present
+    if (device.color && device.color.r !== undefined && device.color.g !== undefined && device.color.b !== undefined) {
+      return `rgb(${device.color.r},${device.color.g},${device.color.b})`;
+    }
+    // HSV/HSB color
+    if (device.color?.hue !== undefined && device.color?.saturation !== undefined) {
+      const hue = (device.color.hue / 65535) * 360;
+      const saturation = device.color.saturation / 65535;
+      const brightness = ((device.color.brightness || device.brightness || 100) / 65535) * 100;
+      const c = (brightness / 100) * saturation;
+      const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+      const m = (brightness / 100) - c;
+      let r, g, b;
+      if (hue < 60) { r = c; g = x; b = 0; }
+      else if (hue < 120) { r = x; g = c; b = 0; }
+      else if (hue < 180) { r = 0; g = c; b = x; }
+      else if (hue < 240) { r = 0; g = x; b = c; }
+      else if (hue < 300) { r = x; g = 0; b = c; }
+      else { r = c; g = 0; b = x; }
+      r = Math.round((r + m) * 255);
+      g = Math.round((g + m) * 255);
+      b = Math.round((b + m) * 255);
+      return `rgb(${r},${g},${b})`;
+    }
+    // Kelvin/temperature fallback
+    if (device.color?.kelvin && device.color.kelvin > 0) {
+      const kelvin = device.color.kelvin;
+      let r, g, b;
+      if (kelvin <= 2000) { r = 255; g = 147; b = 41; }
+      else if (kelvin <= 3000) { r = 255; g = 197; b = 143; }
+      else if (kelvin <= 4000) { r = 255; g = 214; b = 170; }
+      else if (kelvin <= 5000) { r = 255; g = 228; b = 206; }
+      else { r = 255; g = 243; b = 239; }
+      const brightness = (device.brightness || 100) / 100;
+      r = Math.round(r * brightness);
+      g = Math.round(g * brightness);
+      b = Math.round(b * brightness);
+      return `rgb(${r},${g},${b})`;
+    }
+    // Default to dim white
+    const brightness = (device.brightness || 100) / 100;
+    const gray = Math.round(255 * brightness);
+    return `rgb(${gray},${gray},${gray})`;
   };
 
   const getSceneColors = (scene: any) => {
@@ -223,6 +364,11 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
     
     // Check for colors array in scene definition (for default scenes)
     if (colors.length === 0 && scene.colors && Array.isArray(scene.colors)) {
+      // If hex colors, use inline style
+      if (scene.colors.every((c: string) => c.startsWith('#'))) {
+        return scene.colors;
+      }
+      // Otherwise, use Tailwind classes
       scene.colors.forEach((color: string, index: number) => {
         if (index === 0) {
           colors.push(`from-[${color}]`);
@@ -369,7 +515,8 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
             return (
               <div
                 key={itemKey}
-                className={getItemStyle(item, isActive, isPersistent)}
+                className={getItemStyle(item, isActive, isPersistent).className}
+                style={getItemStyle(item, isActive, isPersistent).style}
                 onClick={(e) => {
                   e.stopPropagation();
                   const itemKey = `${item.type}-${item.id}`;
@@ -405,15 +552,15 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
               >
                 <div className={`flex ${item.type === 'lighting' ? 'flex-row items-center' : 'flex-col items-center justify-center'} h-full text-center`}>
                   <div className={`${item.type === 'lighting' ? 'w-6 h-6 md:w-8 md:h-8 mr-2 md:mr-3' : 'w-8 h-8 md:w-10 md:h-10 mb-2'} rounded-lg flex items-center justify-center ${getIconBackgroundStyle(item)}`}>
-                    <i className={`fas ${getIconComponent(item.icon, item.type)} text-white ${item.type === 'lighting' ? 'text-xs md:text-sm' : 'text-sm md:text-lg'}`}></i>
+                    <i className={`fas ${getIconComponent((item as any)?.icon, item.type)} text-white ${item.type === 'lighting' ? 'text-xs md:text-sm' : 'text-sm md:text-lg'}`}></i>
                   </div>
                   <div className={item.type === 'lighting' ? 'flex-1' : ''}>
                     <h3 className={`text-white font-medium mb-1 group-hover:text-blue-300 transition-colors drop-shadow-md ${item.type === 'lighting' ? 'text-xs md:text-sm' : 'text-xs md:text-sm'}`}>
                       {item.name}
                     </h3>
-                    {item.description && item.type !== 'lighting' && (
+                    {(item as any)?.description && item.type !== 'lighting' && (
                       <p className="text-slate-200 text-xs line-clamp-2 group-hover:text-slate-300 transition-colors drop-shadow-sm">
-                        {item.description}
+                        {(item as any).description}
                       </p>
                     )}
                   </div>

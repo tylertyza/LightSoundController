@@ -48,45 +48,59 @@ export default function Soundboard() {
     }
   }, [devices]);
 
-  // WebSocket message handling for real-time device updates
+  // New WebSocket message handling for real-time device updates
   useEffect(() => {
-    if (socket) {
-      const handleMessage = (event: MessageEvent) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          
-          switch (message.type) {
-            case 'device_status':
-            case 'device_discovered':
-              // Invalidate device cache to trigger refetch
-              queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
-              break;
-            case 'light_effect_triggered':
-              console.log('Light effect triggered:', message.payload);
-              break;
-            case 'sound_played':
-              console.log('Sound played:', message.payload);
-              break;
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+    if (!socket) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const message: WebSocketMessage = JSON.parse(event.data);
+        switch (message.type) {
+          case 'device_discovered':
+          case 'device_status':
+          case 'device_state_update':
+          case 'device_power_update':
+            // Update the local state immediately
+            setConnectedDevices((prev: Device[]) => {
+              const existing = prev.find((d: Device) => d.id === message.payload.id);
+              if (existing) {
+                return prev.map((d: Device) => d.id === message.payload.id ? message.payload : d);
+              }
+              return [...prev, message.payload];
+            });
+            // Also update the query cache for immediate UI updates
+            queryClient.setQueryData(['/api/devices'], (oldData: Device[] | undefined) => {
+              if (!oldData) return [message.payload];
+              const idx = oldData.findIndex((d: Device) => d.id === message.payload.id);
+              if (idx !== -1) {
+                const newData = [...oldData];
+                newData[idx] = message.payload;
+                return newData;
+              }
+              return [...oldData, message.payload];
+            });
+            break;
+          case 'light_effect_triggered':
+            console.log('Light effect triggered:', message.payload);
+            break;
+          case 'sound_played':
+            console.log('Sound played:', message.payload);
+            break;
         }
-      };
-      
-      socket.addEventListener('message', handleMessage);
-      
-      return () => {
-        socket.removeEventListener('message', handleMessage);
-      };
-    }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
+
+    socket.addEventListener('message', handleMessage);
+    return () => socket.removeEventListener('message', handleMessage);
   }, [socket, queryClient]);
 
-  // Periodic refresh for device status colors every second (backup)
+  // Reduce polling interval to every 30 seconds as a backup
   useEffect(() => {
     const interval = setInterval(() => {
       refetchDevices();
-    }, 1000);
-
+    }, 30000); // 30 seconds
     return () => clearInterval(interval);
   }, [refetchDevices]);
   
@@ -131,53 +145,6 @@ export default function Soundboard() {
       window.removeEventListener('closeLightingPanel', handleCloseLightingPanel);
     };
   }, []);
-  
-  useEffect(() => {
-    if (!socket) return;
-    
-    const handleMessage = (event: MessageEvent) => {
-      try {
-        const message: WebSocketMessage = JSON.parse(event.data);
-        
-        switch (message.type) {
-          case 'device_discovered':
-          case 'device_status':
-          case 'device_state_update':
-          case 'device_power_update':
-            // Update the local state immediately
-            setConnectedDevices(prev => {
-              const existing = prev.find(d => d.id === message.payload.id);
-              if (existing) {
-                return prev.map(d => d.id === message.payload.id ? message.payload : d);
-              }
-              return [...prev, message.payload];
-            });
-            // Also update the query cache for immediate UI updates
-            queryClient.setQueryData(['/api/devices'], (oldData: Device[] | undefined) => {
-              if (!oldData) return oldData;
-              return oldData.map(device => 
-                device.id === message.payload.id ? message.payload : device
-              );
-            });
-            break;
-          case 'sound_played':
-            // Handle sound played feedback
-            break;
-          case 'light_effect_triggered':
-            // Handle light effect feedback
-            break;
-          case 'scene_applied':
-            // Handle scene applied feedback
-            break;
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
-    
-    socket.addEventListener('message', handleMessage);
-    return () => socket.removeEventListener('message', handleMessage);
-  }, [socket, refetchDevices, queryClient]);
   
   const handleSoundButtonClick = async (button: SoundButton) => {
     try {
@@ -535,7 +502,36 @@ export default function Soundboard() {
               <SoundboardGrid
                 soundButtons={soundButtons}
                 scenes={scenes}
-                lightingEffects={lightingEffects.filter(effect => !effect.hiddenFromDashboard)}
+                lightingEffects={lightingEffects.filter(effect => !effect.hiddenFromDashboard).map(effect => ({
+                  ...effect,
+                  saveDeviceState: () => {
+                    // Save the current state of all online, adopted devices
+                    const devicesToSave = connectedDevices.filter(d => d.isOnline && d.isAdopted);
+                    const deviceStates = devicesToSave.map(d => ({
+                      id: d.id,
+                      power: d.power,
+                      color: d.color,
+                      brightness: d.brightness,
+                      temperature: d.temperature
+                    }));
+                    // Return a restore function
+                    return async () => {
+                      for (const state of deviceStates) {
+                        // Restore all properties in one call
+                        await fetch(`/api/devices/${state.id}/restore`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            power: state.power,
+                            color: state.color,
+                            brightness: state.brightness,
+                            temperature: state.temperature
+                          })
+                        });
+                      }
+                    };
+                  }
+                }))}
                 onSoundButtonClick={handleSoundButtonClick}
                 onSceneClick={handleSceneClick}
                 onSceneEdit={handleSceneEdit}

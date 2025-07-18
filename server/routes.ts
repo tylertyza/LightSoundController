@@ -5,7 +5,7 @@ import multer from "multer";
 import { storage } from "./storage";
 import { audioStorage } from "./services/audio-storage";
 import { LifxUDPService } from "./services/lifx-udp";
-import { insertDeviceSchema, insertSoundButtonSchema, insertSceneSchema, insertLightEffectSchema, type WebSocketMessage } from "@shared/schema";
+import { insertDeviceSchema, insertSoundButtonSchema, insertSceneSchema, insertLightEffectSchema, type WebSocketMessage, Device } from "@shared/schema";
 import { z } from "zod";
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -544,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await applyCustomEffect((scene as any).customJson, targetDevices);
       } else {
         // Apply scene configuration with device-specific settings
-        for (const device of targetDevices) {
+        for (const device of targetDevices as Device[]) {
           const deviceId = device.id.toString();
           const specificSettings = deviceSettings[deviceId];
           
@@ -641,22 +641,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const effectId = parseInt(req.params.id);
       const { loopCount = 1 } = req.body;
       const effect = await storage.getLightEffect(effectId);
-      
       if (!effect) {
         return res.status(404).json({ error: 'Light effect not found' });
       }
-
       // Get all adopted devices if no specific devices are targeted
       const onlineDevices = await storage.getOnlineDevices();
       const targetDevices = onlineDevices.filter(d => d.isAdopted);
-      
       if (targetDevices.length === 0) {
         return res.status(400).json({ error: 'No adopted devices available' });
       }
-
       // Save current state before applying effect
       const deviceStates = new Map();
-      for (const device of targetDevices) {
+      for (const device of targetDevices as Device[]) {
         deviceStates.set(device.id, {
           power: device.power,
           brightness: device.brightness,
@@ -664,30 +660,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           temperature: device.temperature
         });
       }
-
       // Use loop count from custom JSON if available, otherwise use passed loopCount
       const finalLoopCount = effect.customJson?.loopCount !== undefined ? effect.customJson.loopCount : loopCount;
-
       // Apply custom JSON effect if available
       if (effect.customJson) {
-        await applyCustomEffect(effect.customJson, targetDevices, finalLoopCount);
+        for (const device of targetDevices as Device[]) {
+          lifxService.applyCustomEffect(device.mac, device.ip, effect.customJson, finalLoopCount);
+        }
+        broadcast({ type: 'custom_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id.toString()) } });
       } else {
         // Apply basic effect type
-        for (const device of targetDevices) {
+        for (const device of targetDevices as Device[]) {
           await lifxService.triggerEffect(device.mac, device.ip, effect.type, effect.duration);
         }
+        broadcast({ type: 'light_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id.toString()) } });
       }
-
       // Store the saved states for later restoration (if not infinite loop)
       if (finalLoopCount !== 0) {
         // Calculate total duration and schedule restoration
         const totalDuration = calculateTotalEffectDuration(effect, finalLoopCount);
         setTimeout(async () => {
-          await restoreDeviceStates(deviceStates, targetDevices);
+          await restoreDeviceStates(deviceStates, targetDevices as Device[]);
         }, totalDuration);
       }
-
-      broadcast({ type: 'light_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id) } });
       res.json({ message: 'Light effect applied successfully' });
     } catch (error) {
       console.error('Error applying light effect:', error);
@@ -699,21 +694,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const effectId = parseInt(req.params.id);
       const effect = await storage.getLightEffect(effectId);
-      
       if (!effect) {
         return res.status(404).json({ error: 'Light effect not found' });
       }
-
       // Get all adopted devices
       const onlineDevices = await storage.getOnlineDevices();
       const targetDevices = onlineDevices.filter(d => d.isAdopted);
-      
       // Stop effects on all target devices
-      for (const device of targetDevices) {
+      for (const device of targetDevices as Device[]) {
         lifxService.stopEffect(device.mac, device.ip);
       }
-
-      broadcast({ type: 'light_effect_stopped', payload: { effectId, devices: targetDevices.map(d => d.id) } });
+      if (effect.customJson) {
+        broadcast({ type: 'custom_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id.toString()) } });
+      } else {
+        broadcast({ type: 'light_effect_stopped', payload: { effectId, devices: targetDevices.map(d => d.id.toString()) } });
+      }
       res.json({ message: 'Light effect stopped successfully' });
     } catch (error) {
       console.error('Error stopping light effect:', error);
@@ -755,21 +750,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to delete light effect' });
     }
   });
-
-  // Helper function to apply custom JSON effect
-  async function applyCustomEffect(customJson: any, targetDevices: Device[], loopCount: number = 1) {
-    if (!customJson) {
-      console.error('Invalid custom JSON format');
-      return;
-    }
-
-    console.log('Applying custom effect:', customJson.name || 'Unknown', 'with loop count:', loopCount);
-    
-    // Apply effect to all target devices using the new LIFX service method
-    for (const device of targetDevices) {
-      lifxService.applyCustomEffect(device.mac, device.ip, customJson, loopCount);
-    }
-  }
 
   // Helper function to calculate total effect duration
   function calculateTotalEffectDuration(effect: any, loopCount: number) {

@@ -233,7 +233,6 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
       });
     } else if (effectType === 'lighting') {
       if (!sceneName) return;
-      
       // Parse and validate the steps JSON
       let stepsArray = [];
       if (customEffectJson) {
@@ -247,7 +246,16 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
           return;
         }
       }
-      
+      // Extract colors from steps for gradient
+      let extractedColors = stepsArray
+        .map((step: any) => step.color)
+        .filter((color: string | undefined) => !!color);
+      if (extractedColors.length === 1) {
+        extractedColors.push('#1f2937'); // Add a second color for gradient
+      }
+      if (extractedColors.length === 0) {
+        extractedColors = [sceneColor, '#1f2937'];
+      }
       // Create a complete lighting effect JSON
       const completeEffect = {
         name: sceneName,
@@ -257,7 +265,6 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         globalDelay: customEffectGlobalDelay,
         steps: stepsArray
       };
-      
       // Create a lighting effect
       const lightingEffect = {
         name: sceneName,
@@ -267,9 +274,9 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         configuration: {
           customJson: completeEffect
         },
+        colors: extractedColors,
         hiddenFromDashboard: hiddenFromDashboard
       };
-      
       // Use the onSaveScene callback to handle both create and update
       onSaveScene(lightingEffect);
       
