@@ -192,7 +192,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
           color: colorData
         });
       });
-    }, 100); // Reduced from 150ms to 100ms for better responsiveness
+    }, 150); // Back to 150ms for stability
   }, [colorMutation]);
   
   const handleColorChange = (color: string) => {
@@ -243,15 +243,14 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     
     const brightnessValue = Math.round((newBrightness / 100) * 65535);
     
-    // Update immediately for better responsiveness
+    const colorData = { 
+      hue: 0, 
+      saturation: 0, 
+      brightness: brightnessValue, 
+      kelvin: 0 // Use brightness only without color or temp
+    };
+    
     selectedDevices.forEach(device => {
-      const colorData = { 
-        hue: device.color?.hue || 0, 
-        saturation: device.color?.saturation || 0, 
-        brightness: brightnessValue, 
-        kelvin: device.color?.kelvin || device.temperature || 3500
-      };
-      
       pendingUpdatesRef.current.set(device.id, colorData);
     });
     
@@ -265,14 +264,14 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
+    const colorData = { 
+      hue: 0, 
+      saturation: 0, // Set to 0 to use white temperature instead of color
+      brightness: brightnessValue, 
+      kelvin: newTemperature 
+    };
+    
     selectedDevices.forEach(device => {
-      const colorData = { 
-        hue: 0, 
-        saturation: 0, // Set to 0 to use white temperature instead of color
-        brightness: brightnessValue, 
-        kelvin: newTemperature 
-      };
-      
       pendingUpdatesRef.current.set(device.id, colorData);
     });
     
