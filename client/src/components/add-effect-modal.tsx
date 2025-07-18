@@ -65,6 +65,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
   const [customEffectLoopCount, setCustomEffectLoopCount] = useState(1);
   const [customEffectGlobalDelay, setCustomEffectGlobalDelay] = useState(0);
   const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false);
+  const [isDevicesCollapsed, setIsDevicesCollapsed] = useState(false);
+  const [isModalDevicesCollapsed, setIsModalDevicesCollapsed] = useState(false);
 
   // Initialize form with editing scene data
   useEffect(() => {
@@ -567,49 +569,57 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
 
             {/* Per-Device Controls */}
             <div>
-              <Label className="text-white mb-3 block">Device-Specific Settings</Label>
-              <div className="space-y-3 max-h-60 overflow-y-auto">
-                {adoptedDevices.map((device) => (
-                  <div key={device.id} className="bg-slate-800 p-3 rounded-lg border border-slate-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
-                        <span className="text-white font-medium">{device.label}</span>
-                      </div>
-                      <Checkbox
-                        checked={selectedDevices.includes(device.id.toString())}
-                        onCheckedChange={() => handleDeviceToggle(device.id.toString())}
-                        className="border-slate-600"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-slate-400 text-xs">Color</Label>
-                        <Input
-                          type="color"
-                          value={deviceSettings[device.id]?.color || sceneColor}
-                          className="w-full h-8 bg-slate-700 border-slate-600 p-0"
-                          onChange={(e) => handleDeviceColorChange(device.id.toString(), e.target.value)}
+              <button
+                onClick={() => setIsModalDevicesCollapsed(!isModalDevicesCollapsed)}
+                className="flex items-center text-white mb-3 hover:text-blue-400 transition-colors"
+              >
+                <i className={`fas fa-chevron-${isModalDevicesCollapsed ? 'right' : 'down'} mr-2 text-xs`}></i>
+                Device-Specific Settings ({adoptedDevices.length} devices)
+              </button>
+              {!isModalDevicesCollapsed && (
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {adoptedDevices.map((device) => (
+                    <div key={device.id} className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                          <span className="text-white font-medium">{device.label}</span>
+                        </div>
+                        <Checkbox
+                          checked={selectedDevices.includes(device.id.toString())}
+                          onCheckedChange={() => handleDeviceToggle(device.id.toString())}
+                          className="border-slate-600"
                         />
                       </div>
-                      <div>
-                        <Label className="text-slate-400 text-xs">Brightness ({deviceSettings[device.id]?.brightness || sceneBrightness}%)</Label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="100"
-                          value={deviceSettings[device.id]?.brightness || sceneBrightness}
-                          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                          onChange={(e) => handleDeviceBrightnessChange(device.id.toString(), parseInt(e.target.value))}
-                          style={{
-                            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${deviceSettings[device.id]?.brightness || sceneBrightness}%, #374151 ${deviceSettings[device.id]?.brightness || sceneBrightness}%, #374151 100%)`
-                          }}
-                        />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-slate-400 text-xs">Color</Label>
+                          <Input
+                            type="color"
+                            value={deviceSettings[device.id]?.color || sceneColor}
+                            className="w-full h-8 bg-slate-700 border-slate-600 p-0"
+                            onChange={(e) => handleDeviceColorChange(device.id.toString(), e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-slate-400 text-xs">Brightness ({deviceSettings[device.id]?.brightness || sceneBrightness}%)</Label>
+                          <input
+                            type="range"
+                            min="1"
+                            max="100"
+                            value={deviceSettings[device.id]?.brightness || sceneBrightness}
+                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                            onChange={(e) => handleDeviceBrightnessChange(device.id.toString(), parseInt(e.target.value))}
+                            style={{
+                              background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${deviceSettings[device.id]?.brightness || sceneBrightness}%, #374151 ${deviceSettings[device.id]?.brightness || sceneBrightness}%, #374151 100%)`
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -640,30 +650,38 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
 
           <TabsContent value="lighting" className="space-y-4">
             <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-              <h3 className="text-white font-medium mb-3">Adopted Devices</h3>
-              {adoptedDevices.length === 0 ? (
-                <p className="text-slate-400 text-sm">No adopted devices available. Please adopt devices first to create lighting effects.</p>
-              ) : (
-                <div className="space-y-2">
-                  {adoptedDevices.map((device) => (
-                    <div key={device.id} className="flex items-center justify-between bg-slate-900 p-2 rounded border border-slate-600">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
-                        <span className="text-white font-medium">{device.label}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline" className="text-slate-400 border-slate-600 text-xs">
-                          ID: {device.id}
-                        </Badge>
-                        {device.isOnline && (
-                          <Badge variant="outline" className="text-emerald-400 border-emerald-400 text-xs">
-                            Online
+              <button
+                onClick={() => setIsDevicesCollapsed(!isDevicesCollapsed)}
+                className="flex items-center text-white font-medium mb-3 hover:text-blue-400 transition-colors"
+              >
+                <i className={`fas fa-chevron-${isDevicesCollapsed ? 'right' : 'down'} mr-2 text-xs`}></i>
+                Adopted Devices ({adoptedDevices.length})
+              </button>
+              {!isDevicesCollapsed && (
+                adoptedDevices.length === 0 ? (
+                  <p className="text-slate-400 text-sm">No adopted devices available. Please adopt devices first to create lighting effects.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {adoptedDevices.map((device) => (
+                      <div key={device.id} className="flex items-center justify-between bg-slate-900 p-2 rounded border border-slate-600">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                          <span className="text-white font-medium">{device.label}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline" className="text-slate-400 border-slate-600 text-xs">
+                            ID: {device.id}
                           </Badge>
-                        )}
+                          {device.isOnline && (
+                            <Badge variant="outline" className="text-emerald-400 border-emerald-400 text-xs">
+                              Online
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )
               )}
             </div>
 
