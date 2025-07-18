@@ -334,9 +334,9 @@ export class LifxUDPService extends EventEmitter {
     this.sendPacket(packet, address);
   }
 
-  public triggerEffect(target: string, address: string, effectType: string, duration: number = 1000) {
+  public async triggerEffect(target: string, address: string, effectType: string, duration: number = 1000) {
     // Save current state before applying effect
-    this.saveDeviceState(target);
+    await this.saveDeviceState(target);
     
     switch (effectType) {
       case 'flash':
@@ -435,18 +435,30 @@ export class LifxUDPService extends EventEmitter {
   private savedDeviceStates: Map<string, ColorHSBK & { power: boolean }> = new Map();
 
   // Save device state before applying effects
-  private saveDeviceState(target: string) {
+  private async saveDeviceState(target: string) {
+    // First request fresh device state
     const device = this.discoveredDevices.get(target);
     if (device) {
-      const state = {
-        hue: device.color?.hue || 0,
-        saturation: device.color?.saturation || 0,
-        brightness: device.color?.brightness || Math.round((device.brightness || 100) / 100 * 65535),
-        kelvin: device.color?.kelvin || device.temperature || 3500,
-        power: device.power || false
-      };
-      this.savedDeviceStates.set(target, state);
-      console.log(`Saved state for device ${target}:`, state);
+      // Request current state before saving
+      this.requestLightState(target, device.ip);
+      this.requestDevicePower(target, device.ip);
+      
+      // Wait a moment for the state to be updated
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Get updated device info
+      const updatedDevice = this.discoveredDevices.get(target);
+      if (updatedDevice) {
+        const state = {
+          hue: updatedDevice.color?.hue || 0,
+          saturation: updatedDevice.color?.saturation || 0,
+          brightness: updatedDevice.color?.brightness || Math.round((updatedDevice.brightness || 100) / 100 * 65535),
+          kelvin: updatedDevice.color?.kelvin || updatedDevice.temperature || 3500,
+          power: updatedDevice.power || false
+        };
+        this.savedDeviceStates.set(target, state);
+        console.log(`Saved fresh state for device ${target}:`, state);
+      }
     }
   }
 

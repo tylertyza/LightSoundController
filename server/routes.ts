@@ -235,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const device = await storage.getDevice(deviceId);
       if (device && device.isOnline) {
-        lifxService.triggerEffect(device.mac, device.ip, effectType, duration);
+        await lifxService.triggerEffect(device.mac, device.ip, effectType, duration);
         broadcast({ type: 'light_effect_triggered', payload: { deviceId, effect: effectType } });
       }
     } catch (error) {
@@ -251,9 +251,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const devices = await storage.getDevices();
         const onlineDevices = devices.filter(d => d.isOnline);
         
-        onlineDevices.forEach(device => {
-          lifxService.triggerEffect(device.mac, device.ip, button.lightEffect, 2000);
-        });
+        // Wait for all effects to be triggered properly
+        await Promise.all(onlineDevices.map(device => 
+          lifxService.triggerEffect(device.mac, device.ip, button.lightEffect, 2000)
+        ));
         
         broadcast({ type: 'sound_played', payload: { buttonId, timestamp: Date.now() } });
       }
@@ -663,7 +664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Apply basic effect type
         for (const device of targetDevices) {
-          lifxService.triggerEffect(device.mac, device.ip, effect.type, effect.duration);
+          await lifxService.triggerEffect(device.mac, device.ip, effect.type, effect.duration);
         }
       }
 

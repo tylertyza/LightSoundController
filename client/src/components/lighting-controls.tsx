@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import LightingEffects from "./lighting-effects";
+
 
 // Helper function to generate status circle color based on device state
 const getDeviceStatusColor = (device: Device) => {
@@ -192,7 +192,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
           color: colorData
         });
       });
-    }, 150); // 150ms debounce delay
+    }, 100); // Reduced from 150ms to 100ms for better responsiveness
   }, [colorMutation]);
   
   const handleColorChange = (color: string) => {
@@ -243,14 +243,15 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     
     const brightnessValue = Math.round((newBrightness / 100) * 65535);
     
-    const colorData = { 
-      hue: 0, 
-      saturation: 0, 
-      brightness: brightnessValue, 
-      kelvin: 0 // Use brightness only without color or temp
-    };
-    
+    // Update immediately for better responsiveness
     selectedDevices.forEach(device => {
+      const colorData = { 
+        hue: device.color?.hue || 0, 
+        saturation: device.color?.saturation || 0, 
+        brightness: brightnessValue, 
+        kelvin: device.color?.kelvin || device.temperature || 3500
+      };
+      
       pendingUpdatesRef.current.set(device.id, colorData);
     });
     
@@ -264,14 +265,14 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
-    const colorData = { 
-      hue: 0, 
-      saturation: 0, // Set to 0 to use white temperature instead of color
-      brightness: brightnessValue, 
-      kelvin: newTemperature 
-    };
-    
     selectedDevices.forEach(device => {
+      const colorData = { 
+        hue: 0, 
+        saturation: 0, // Set to 0 to use white temperature instead of color
+        brightness: brightnessValue, 
+        kelvin: newTemperature 
+      };
+      
       pendingUpdatesRef.current.set(device.id, colorData);
     });
     
@@ -494,10 +495,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
         </div>
         </div>
         
-        {/* Lighting Effects */}
-        <div className="border-t border-slate-700">
-          <LightingEffects />
-        </div>
+
       </div>
     </div>
   );
