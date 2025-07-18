@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -29,8 +29,12 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
+# Set environment to production
+ENV NODE_ENV=production
+
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nextjs:nodejs /app/dist/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
 

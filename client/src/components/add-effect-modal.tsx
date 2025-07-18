@@ -245,21 +245,21 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         color: "#ff0000",
         duration: 1000,
         easing: { type: "ease-in-out", duration: 200 },
-        deviceIds: ["device1", "device2"]
+        deviceIds: ["1", "2"]
       },
       {
         brightness: 80,
         color: "#00ff00",
         duration: 1000,
         easing: { type: "ease-in-out", duration: 200 },
-        deviceIds: ["device1", "device2"]
+        deviceIds: ["1", "2"]
       },
       {
         brightness: 60,
         color: "#0000ff",
         duration: 1000,
         easing: { type: "ease-in-out", duration: 200 },
-        deviceIds: ["device1", "device2"]
+        deviceIds: ["1", "2"]
       }
     ]
   };
@@ -492,6 +492,44 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
           </TabsContent>
 
           <TabsContent value="lighting" className="space-y-4">
+            <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+              <h3 className="text-white font-medium mb-3">Adopted Devices</h3>
+              {adoptedDevices.length === 0 ? (
+                <p className="text-slate-400 text-sm">No adopted devices available. Please adopt devices first to create lighting effects.</p>
+              ) : (
+                <div className="space-y-2">
+                  {adoptedDevices.map((device) => (
+                    <div key={device.id} className="flex items-center justify-between bg-slate-900 p-2 rounded border border-slate-600">
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                        <span className="text-white font-medium">{device.label}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline" className="text-slate-400 border-slate-600 text-xs">
+                          ID: {device.id}
+                        </Badge>
+                        {device.isOnline && (
+                          <Badge variant="outline" className="text-emerald-400 border-emerald-400 text-xs">
+                            Online
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+              <h3 className="text-white font-medium mb-3">How to Use Device IDs</h3>
+              <div className="text-slate-400 text-sm space-y-2">
+                <p>• Reference devices by their ID numbers in custom JSON effects</p>
+                <p>• Use the "deviceIds" array in each step to target specific lights</p>
+                <p>• Example: "deviceIds": ["1", "2"] targets devices with ID 1 and 2</p>
+                <p>• Leave empty to target all adopted devices by default</p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-white">Name</Label>

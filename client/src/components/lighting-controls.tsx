@@ -24,25 +24,37 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       const response = await apiRequest("POST", `/api/devices/${deviceId}/power`, { power });
       return response.json();
     },
-    onSuccess: (data, variables) => {
-      // Immediately update the UI with the expected state
+    onMutate: async (variables) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/devices'] });
+      
+      // Get current data
+      const previousDevices = queryClient.getQueryData(['/api/devices']);
+      
+      // Optimistically update the data
       queryClient.setQueryData(['/api/devices'], (oldData: any) => {
         if (!oldData) return oldData;
         return oldData.map((device: any) => 
           device.id === variables.deviceId ? { ...device, power: variables.power } : device
         );
       });
-      // Invalidate to get fresh data from server
-      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+      
+      return { previousDevices };
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Revert optimistic update on error
+      if (context?.previousDevices) {
+        queryClient.setQueryData(['/api/devices'], context.previousDevices);
+      }
       console.error('Power toggle failed:', error);
       toast({
         title: "Error",
         description: "Failed to toggle device power",
         variant: "destructive",
       });
-      // Refresh data on error to reset state
+    },
+    onSettled: () => {
+      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
     },
   });
