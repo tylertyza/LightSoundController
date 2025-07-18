@@ -486,7 +486,7 @@ export default function Soundboard() {
         
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 p-3 md:p-6 overflow-y-auto pb-20 md:pb-6">
+          <div className="flex-1 p-3 md:p-6 overflow-y-auto pb-24 md:pb-6">
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h2 className="text-xl md:text-2xl font-bold text-white">Sound & Light Board</h2>
@@ -575,7 +575,7 @@ export default function Soundboard() {
       />
       
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-800 border-t border-slate-700 p-3">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-800 border-t border-slate-700 p-4">
         <div className="flex items-center justify-center">
           <div className="bg-slate-700 rounded-full p-1 flex items-center space-x-1">
             <button
@@ -583,27 +583,41 @@ export default function Soundboard() {
                 setIsDevicePanelOpen(true);
                 setIsLightingPanelOpen(false);
               }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors touch-manipulation ${
+              className={`px-3 py-2 rounded-full text-xs font-medium transition-colors touch-manipulation ${
                 isDevicePanelOpen 
                   ? 'bg-blue-600 text-white' 
                   : 'text-slate-300 hover:text-white'
               }`}
             >
-              <i className="fas fa-router mr-2"></i>
-              Devices
+              <i className="fas fa-router mr-1"></i>
+              Settings
+            </button>
+            <button
+              onClick={() => {
+                setIsDevicePanelOpen(false);
+                setIsLightingPanelOpen(false);
+              }}
+              className={`px-3 py-2 rounded-full text-xs font-medium transition-colors touch-manipulation ${
+                !isDevicePanelOpen && !isLightingPanelOpen 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <i className="fas fa-th-large mr-1"></i>
+              Dashboard
             </button>
             <button
               onClick={() => {
                 setIsLightingPanelOpen(true);
                 setIsDevicePanelOpen(false);
               }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors touch-manipulation ${
+              className={`px-3 py-2 rounded-full text-xs font-medium transition-colors touch-manipulation ${
                 isLightingPanelOpen 
                   ? 'bg-blue-600 text-white' 
                   : 'text-slate-300 hover:text-white'
               }`}
             >
-              <i className="fas fa-palette mr-2"></i>
+              <i className="fas fa-palette mr-1"></i>
               Lighting
             </button>
           </div>
