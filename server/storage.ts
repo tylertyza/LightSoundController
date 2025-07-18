@@ -66,12 +66,10 @@ export class MemStorage implements IStorage {
           name: 'Flash',
           description: 'Quick flash effect',
           loop: false,
-          loopCount: 1,
-          globalDelay: 0,
           steps: [
-            { deviceIds: [], settings: { brightness: 100, power: true }, delay: 0 },
-            { deviceIds: [], settings: { brightness: 0 }, delay: 100 },
-            { deviceIds: [], settings: { brightness: 100 }, delay: 100 }
+            { brightness: 100, color: '#FFFFFF', duration: 100, easing: 'linear' },
+            { brightness: 0, color: '#FFFFFF', duration: 100, easing: 'linear' },
+            { brightness: 100, color: '#FFFFFF', duration: 100, easing: 'linear' }
           ]
         },
         hiddenFromDashboard: false,
@@ -86,12 +84,9 @@ export class MemStorage implements IStorage {
           name: 'Strobe',
           description: 'Strobe light effect',
           loop: true,
-          loopCount: 5,
-          globalDelay: 200,
           steps: [
-            { deviceIds: [], settings: { brightness: 100, power: true }, delay: 0 },
-            { deviceIds: [], settings: { brightness: 0 }, delay: 100 },
-            { deviceIds: [], settings: { brightness: 100 }, delay: 100 }
+            { brightness: 100, color: '#FFFFFF', duration: 100, easing: 'linear' },
+            { brightness: 0, color: '#FFFFFF', duration: 100, easing: 'linear' }
           ]
         },
         hiddenFromDashboard: false,
@@ -106,12 +101,10 @@ export class MemStorage implements IStorage {
           name: 'Fade',
           description: 'Smooth fade in/out',
           loop: false,
-          loopCount: 1,
-          globalDelay: 0,
           steps: [
-            { deviceIds: [], settings: { brightness: 0, power: true }, delay: 0 },
-            { deviceIds: [], settings: { brightness: 100 }, delay: 500 },
-            { deviceIds: [], settings: { brightness: 0 }, delay: 500 }
+            { brightness: 0, color: '#F59E0B', duration: 1000, easing: 'ease-in-out' },
+            { brightness: 100, color: '#F59E0B', duration: 1000, easing: 'ease-in-out' },
+            { brightness: 0, color: '#F59E0B', duration: 1000, easing: 'ease-in-out' }
           ]
         },
         hiddenFromDashboard: false,
@@ -126,12 +119,12 @@ export class MemStorage implements IStorage {
           name: 'Color Cycle',
           description: 'Cycle through RGB colors',
           loop: false,
-          loopCount: 1,
-          globalDelay: 0,
           steps: [
-            { deviceIds: [], settings: { color: { hue: 0, saturation: 65535, brightness: 50000 }, power: true }, delay: 1000 },
-            { deviceIds: [], settings: { color: { hue: 21845, saturation: 65535, brightness: 50000 } }, delay: 1000 },
-            { deviceIds: [], settings: { color: { hue: 43690, saturation: 65535, brightness: 50000 } }, delay: 1000 }
+            { brightness: 80, color: '#FF0000', duration: 1000, easing: 'ease-in-out' },
+            { brightness: 80, color: '#00FF00', duration: 1000, easing: 'ease-in-out' },
+            { brightness: 80, color: '#0000FF', duration: 1000, easing: 'ease-in-out' },
+            { brightness: 80, color: '#FFFF00', duration: 1000, easing: 'ease-in-out' },
+            { brightness: 80, color: '#FF00FF', duration: 1000, easing: 'ease-in-out' }
           ]
         },
         hiddenFromDashboard: false,
@@ -146,12 +139,9 @@ export class MemStorage implements IStorage {
           name: 'Breathe',
           description: 'Breathing brightness effect',
           loop: true,
-          loopCount: 3,
-          globalDelay: 500,
           steps: [
-            { deviceIds: [], settings: { brightness: 10, power: true }, delay: 0 },
-            { deviceIds: [], settings: { brightness: 100 }, delay: 1000 },
-            { deviceIds: [], settings: { brightness: 10 }, delay: 1000 }
+            { brightness: 20, color: '#4F46E5', duration: 2000, easing: 'ease-in-out' },
+            { brightness: 80, color: '#4F46E5', duration: 2000, easing: 'ease-in-out' }
           ]
         },
         hiddenFromDashboard: false,

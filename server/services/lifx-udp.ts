@@ -412,9 +412,105 @@ export class LifxUDPService extends EventEmitter {
     
     colors.forEach((color, index) => {
       setTimeout(() => {
-        this.setColor(target, address, color, stepDuration);
+        // Use stepDuration for smooth fading to next color
+        this.setColor(target, address, color, Math.round(stepDuration * 0.8));
       }, index * stepDuration);
     });
+  }
+
+  // New method to handle complex JSON effects
+  public applyCustomEffect(target: string, address: string, effectData: any) {
+    if (!effectData || !effectData.steps || !Array.isArray(effectData.steps)) {
+      console.error('Invalid effect data:', effectData);
+      return;
+    }
+
+    const executeSteps = () => {
+      let currentTime = 0;
+      
+      effectData.steps.forEach((step: any, index: number) => {
+        setTimeout(() => {
+          const color = this.parseColorFromStep(step);
+          const duration = step.duration || 1000;
+          
+          console.log(`Applying step ${index + 1}: brightness=${step.brightness}%, color=${step.color}, duration=${duration}ms`);
+          this.setColor(target, address, color, duration);
+        }, currentTime);
+        
+        currentTime += step.duration || 1000;
+      });
+      
+      // Handle looping
+      if (effectData.loop) {
+        setTimeout(() => {
+          executeSteps();
+        }, currentTime);
+      }
+    };
+    
+    executeSteps();
+  }
+
+  private parseColorFromStep(step: any): ColorHSBK {
+    let color: ColorHSBK = { hue: 0, saturation: 0, brightness: 65535, kelvin: 3500 };
+    
+    // Handle brightness
+    if (step.brightness !== undefined) {
+      color.brightness = Math.round((step.brightness / 100) * 65535);
+    }
+    
+    // Handle color (hex format)
+    if (step.color && step.color.startsWith('#')) {
+      const hex = step.color.substring(1);
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const diff = max - min;
+      
+      let hue = 0;
+      if (diff !== 0) {
+        if (max === r) {
+          hue = ((g - b) / diff) % 6;
+        } else if (max === g) {
+          hue = (b - r) / diff + 2;
+        } else {
+          hue = (r - g) / diff + 4;
+        }
+      }
+      hue = Math.round(hue * 60);
+      if (hue < 0) hue += 360;
+      
+      const saturation = max === 0 ? 0 : diff / max;
+      
+      color.hue = Math.round((hue / 360) * 65535);
+      color.saturation = Math.round(saturation * 65535);
+      color.kelvin = 0; // Use color instead of kelvin
+    }
+    
+    // Handle temperature
+    if (step.temperature && step.temperature > 0) {
+      color.kelvin = step.temperature;
+      color.hue = 0;
+      color.saturation = 0; // White light
+    }
+    
+    return color;
+  }
+
+  public setTemperature(target: string, address: string, temperature: number, duration: number = 0) {
+    const payload = Buffer.alloc(13);
+    payload.writeUInt8(0, 0); // reserved
+    payload.writeUInt16LE(0, 1); // hue
+    payload.writeUInt16LE(0, 3); // saturation (0 for white)
+    payload.writeUInt16LE(65535, 5); // brightness (full)
+    payload.writeUInt16LE(temperature, 7); // kelvin
+    payload.writeUInt32LE(duration, 9);
+    
+    const packet = this.createPacket(102, payload, target); // SetColor
+    this.sendPacket(packet, address);
   }
 
   public close() {

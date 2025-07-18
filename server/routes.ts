@@ -697,52 +697,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Helper function to apply custom JSON effect
   async function applyCustomEffect(customJson: any, targetDevices: Device[]) {
-    if (!customJson || !customJson.steps) {
+    if (!customJson) {
       console.error('Invalid custom JSON format');
       return;
     }
 
-    const steps = customJson.steps;
-    const globalDelay = customJson.globalDelay || 0;
-    const loopCount = customJson.loop ? (customJson.loopCount || 1) : 1;
-
-    for (let loop = 0; loop < loopCount; loop++) {
-      for (const step of steps) {
-        const { deviceIds, settings, delay = 0 } = step;
-        
-        // If deviceIds is empty, apply to all target devices
-        const devicesToApply = deviceIds && deviceIds.length > 0 
-          ? targetDevices.filter(d => deviceIds.includes(d.id.toString()))
-          : targetDevices;
-
-        for (const device of devicesToApply) {
-          if (settings) {
-            // Apply settings (brightness, color, temperature, etc.)
-            if (settings.brightness !== undefined) {
-              lifxService.setBrightness(device.mac, device.ip, settings.brightness);
-            }
-            if (settings.color) {
-              lifxService.setColor(device.mac, device.ip, settings.color);
-            }
-            if (settings.temperature !== undefined) {
-              lifxService.setTemperature(device.mac, device.ip, settings.temperature);
-            }
-            if (settings.power !== undefined) {
-              lifxService.setPower(device.mac, device.ip, settings.power);
-            }
-          }
-        }
-
-        // Wait for step delay
-        if (delay > 0) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-
-      // Wait for global delay between loops
-      if (globalDelay > 0 && loop < loopCount - 1) {
-        await new Promise(resolve => setTimeout(resolve, globalDelay));
-      }
+    console.log('Applying custom effect:', customJson.name || 'Unknown');
+    
+    // Apply effect to all target devices using the new LIFX service method
+    for (const device of targetDevices) {
+      lifxService.applyCustomEffect(device.mac, device.ip, customJson);
     }
   }
 
