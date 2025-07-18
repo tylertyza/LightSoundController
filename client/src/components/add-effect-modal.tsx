@@ -159,6 +159,32 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         targetDevices: selectedDevices,
         customJson,
       });
+    } else if (effectType === 'lighting') {
+      if (!sceneName) return;
+      
+      // Create a lighting effect
+      const lightingEffect = {
+        name: sceneName,
+        description: sceneDescription || undefined,
+        type: 'custom',
+        duration: 2000,
+        configuration: {
+          customJson: customEffectJson ? JSON.parse(customEffectJson) : null
+        }
+      };
+      
+      // Save as lighting effect
+      fetch('/api/light-effects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(lightingEffect),
+      }).then(() => {
+        // Refresh the lighting effects list
+        window.location.reload();
+      });
+      
     } else {
       if (!sceneName) return;
       
@@ -649,12 +675,12 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
             disabled={
               (effectType === 'sound' && (!soundName || !soundFile)) ||
               (effectType === 'scene' && (!sceneName || (sceneType === 'custom' && !customEffectJson))) ||
-              (effectType === 'lighting')
+              (effectType === 'lighting' && !sceneName)
             }
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Zap className="w-4 h-4 mr-2" />
-            {effectType === 'lighting' ? 'Manage Effects' : editingScene ? 'Update' : 'Create Effect'}
+            {effectType === 'lighting' ? 'Add Lighting Effect' : editingScene ? 'Update' : 'Create Effect'}
           </Button>
         </div>
       </DialogContent>
