@@ -389,18 +389,6 @@ export default function Soundboard() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-white">Sound & Light Board</h2>
                 <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
-                    <i className="fas fa-volume-up text-slate-400"></i>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={globalVolume}
-                      onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                      className="w-20 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                  </div>
                   <button
                     onClick={handleAddEffect}
                     className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors"

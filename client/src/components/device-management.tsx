@@ -138,11 +138,6 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
                     <div className="flex items-center space-x-2">
                       <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
                       <span className="text-sm font-medium text-white">{device.label}</span>
-                      {device.isAdopted && (
-                        <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
-                          Adopted
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center space-x-1">
                       <button
@@ -166,6 +161,13 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
                       </button>
                     </div>
                   </div>
+                  {device.isAdopted && (
+                    <div className="mb-2">
+                      <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+                        Adopted
+                      </span>
+                    </div>
+                  )}
                   <div className="text-xs text-slate-400 space-y-1">
                     <div>IP: <span className="text-slate-300">{device.ip}</span></div>
                     <div>MAC: <span className="text-slate-300">{device.mac}</span></div>
