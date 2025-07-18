@@ -436,6 +436,12 @@ export class LifxUDPService extends EventEmitter {
 
   // Save device state before applying effects
   private async saveDeviceState(target: string) {
+    // Only save state if we don't already have it saved (to prevent overwriting during loops)
+    if (this.savedDeviceStates.has(target)) {
+      console.log(`Device ${target} already has saved state, skipping save`);
+      return;
+    }
+    
     // First request fresh device state
     const device = this.discoveredDevices.get(target);
     if (device) {
@@ -457,7 +463,7 @@ export class LifxUDPService extends EventEmitter {
           power: updatedDevice.power || false
         };
         this.savedDeviceStates.set(target, state);
-        console.log(`Saved fresh state for device ${target}:`, state);
+        console.log(`Saved initial state for device ${target}:`, state);
       }
     }
   }
@@ -553,7 +559,10 @@ export class LifxUDPService extends EventEmitter {
       
       // Restore previous state if we have address
       if (address) {
-        this.restoreDeviceState(target, address);
+        // Add a small delay to ensure any pending commands are processed
+        setTimeout(() => {
+          this.restoreDeviceState(target, address);
+        }, 100);
       }
     }
   }

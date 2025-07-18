@@ -223,8 +223,12 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
     
     // Check for colors array in scene definition (for default scenes)
     if (colors.length === 0 && scene.colors && Array.isArray(scene.colors)) {
-      scene.colors.forEach((color: string) => {
-        colors.push(`from-[${color}]`);
+      scene.colors.forEach((color: string, index: number) => {
+        if (index === 0) {
+          colors.push(`from-[${color}]`);
+        } else if (index === 1) {
+          colors.push(`to-[${color}]`);
+        }
       });
     }
     
@@ -256,7 +260,7 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
     // Add default colors for gradient if we have some
     if (colors.length === 1) {
       colors.push('to-slate-800');
-    } else if (colors.length > 1) {
+    } else if (colors.length > 1 && !colors.some(c => c.startsWith('to-'))) {
       colors.push('to-slate-900');
     }
     

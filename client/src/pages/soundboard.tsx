@@ -48,7 +48,40 @@ export default function Soundboard() {
     }
   }, [devices]);
 
-  // Periodic refresh for device status colors every second
+  // WebSocket message handling for real-time device updates
+  useEffect(() => {
+    if (socket) {
+      const handleMessage = (event: MessageEvent) => {
+        try {
+          const message: WebSocketMessage = JSON.parse(event.data);
+          
+          switch (message.type) {
+            case 'device_status':
+            case 'device_discovered':
+              // Invalidate device cache to trigger refetch
+              queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+              break;
+            case 'light_effect_triggered':
+              console.log('Light effect triggered:', message.payload);
+              break;
+            case 'sound_played':
+              console.log('Sound played:', message.payload);
+              break;
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+      
+      socket.addEventListener('message', handleMessage);
+      
+      return () => {
+        socket.removeEventListener('message', handleMessage);
+      };
+    }
+  }, [socket, queryClient]);
+
+  // Periodic refresh for device status colors every second (backup)
   useEffect(() => {
     const interval = setInterval(() => {
       refetchDevices();

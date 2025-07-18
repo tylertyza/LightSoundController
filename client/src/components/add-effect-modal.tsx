@@ -288,7 +288,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         name: sceneName,
         description: sceneDescription || undefined,
         configuration,
-        colors: [sceneColor],
+        colors: [sceneColor, '#1f2937'], // Add second color for gradient
         icon: sceneIcon,
         targetDevices: selectedDevices,
         customJson: null,
