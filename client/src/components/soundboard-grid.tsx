@@ -10,13 +10,14 @@ interface SoundboardGridProps {
   onSoundButtonClick: (button: SoundButton) => void;
   onSceneClick: (scene: Scene) => void;
   onLightingEffectClick: (effect: LightEffect) => void;
+  onLightingEffectStop: (effect: LightEffect) => void;
   onSceneEdit?: (scene: Scene) => void;
   onLightingEffectEdit?: (effect: LightEffect) => void;
 }
 
 type GridItem = (SoundButton & { type: 'sound' }) | (Scene & { type: 'scene' }) | (LightEffect & { type: 'lighting' });
 
-export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, onSoundButtonClick, onSceneClick, onLightingEffectClick, onSceneEdit, onLightingEffectEdit }: SoundboardGridProps) {
+export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, onSoundButtonClick, onSceneClick, onLightingEffectClick, onLightingEffectStop, onSceneEdit, onLightingEffectEdit }: SoundboardGridProps) {
   const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
   const [persistentActiveItems, setPersistentActiveItems] = useState<Set<string>>(new Set());
   const [progressItems, setProgressItems] = useState<Map<string, number>>(new Map());
@@ -41,6 +42,8 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
           newMap.delete(itemKey);
           return newMap;
         });
+        // Stop the effect on the server
+        onLightingEffectStop(item);
       } else {
         // Turn on this effect and turn off others
         setPersistentActiveItems(new Set([itemKey]));
@@ -49,7 +52,9 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
         onLightingEffectClick(item);
         
         // Check if it's a timed effect (not infinite loop)
-        if (item.duration && item.duration > 0 && item.loop !== 0) {
+        // Don't show progress bar for infinite loops (loopCount === 0)
+        const isInfiniteLoop = item.customJson?.loopCount === 0;
+        if (item.duration && item.duration > 0 && !isInfiniteLoop) {
           startProgressBar(itemKey, item.duration);
         }
       }

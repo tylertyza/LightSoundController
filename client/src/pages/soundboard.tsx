@@ -370,6 +370,32 @@ export default function Soundboard() {
     }
   };
 
+  const handleLightingEffectStop = async (effect: any) => {
+    try {
+      const devices = connectedDevices.filter(d => d.isOnline && d.isAdopted);
+      
+      if (devices.length > 0) {
+        const response = await fetch(`/api/light-effects/${effect.id}/stop`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          sendMessage({
+            type: 'light_effect_stopped',
+            payload: { effectId: effect.id }
+          });
+        } else {
+          console.error('Error stopping lighting effect:', await response.text());
+        }
+      }
+    } catch (error) {
+      console.error('Error stopping lighting effect:', error);
+    }
+  };
+
 
   
   const onlineDevices = connectedDevices.filter(d => d.isOnline);
@@ -469,6 +495,7 @@ export default function Soundboard() {
                 onSceneClick={handleSceneClick}
                 onSceneEdit={handleSceneEdit}
                 onLightingEffectClick={handleLightingEffectClick}
+                onLightingEffectStop={handleLightingEffectStop}
                 onLightingEffectEdit={handleLightingEffectEdit}
               />
             </div>

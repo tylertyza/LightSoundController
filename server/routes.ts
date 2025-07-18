@@ -643,9 +643,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No adopted devices available' });
       }
 
+      // Use loop count from custom JSON if available, otherwise use passed loopCount
+      const finalLoopCount = effect.customJson?.loopCount !== undefined ? effect.customJson.loopCount : loopCount;
+
       // Apply custom JSON effect if available
       if (effect.customJson) {
-        await applyCustomEffect(effect.customJson, targetDevices, loopCount);
+        await applyCustomEffect(effect.customJson, targetDevices, finalLoopCount);
       } else {
         // Apply basic effect type
         for (const device of targetDevices) {
@@ -658,6 +661,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error applying light effect:', error);
       res.status(500).json({ error: 'Failed to apply light effect' });
+    }
+  });
+
+  app.post('/api/light-effects/:id/stop', async (req, res) => {
+    try {
+      const effectId = parseInt(req.params.id);
+      const effect = await storage.getLightEffect(effectId);
+      
+      if (!effect) {
+        return res.status(404).json({ error: 'Light effect not found' });
+      }
+
+      // Get all adopted devices
+      const onlineDevices = await storage.getOnlineDevices();
+      const targetDevices = onlineDevices.filter(d => d.isAdopted);
+      
+      // Stop effects on all target devices
+      for (const device of targetDevices) {
+        lifxService.stopEffect(device.mac);
+      }
+
+      broadcast({ type: 'light_effect_stopped', payload: { effectId, devices: targetDevices.map(d => d.id) } });
+      res.json({ message: 'Light effect stopped successfully' });
+    } catch (error) {
+      console.error('Error stopping light effect:', error);
+      res.status(500).json({ error: 'Failed to stop light effect' });
     }
   });
 

@@ -418,6 +418,9 @@ export class LifxUDPService extends EventEmitter {
     });
   }
 
+  // Store active effects to allow stopping them
+  private activeEffects: Map<string, NodeJS.Timeout[]> = new Map();
+
   // New method to handle complex JSON effects
   public applyCustomEffect(target: string, address: string, effectData: any, loopCount: number = 1) {
     if (!effectData || !effectData.steps || !Array.isArray(effectData.steps)) {
@@ -425,14 +428,19 @@ export class LifxUDPService extends EventEmitter {
       return;
     }
 
+    // Stop any existing effect for this device
+    this.stopEffect(target);
+
     let currentLoop = 0;
     const maxLoops = loopCount || 1;
+    const isInfiniteLoop = loopCount === 0;
+    const timeouts: NodeJS.Timeout[] = [];
 
     const executeSteps = () => {
       let currentTime = 0;
       
       effectData.steps.forEach((step: any, index: number) => {
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
           const color = this.parseColorFromStep(step);
           const duration = step.duration || 1000;
           
@@ -440,19 +448,33 @@ export class LifxUDPService extends EventEmitter {
           this.setColor(target, address, color, duration);
         }, currentTime);
         
+        timeouts.push(timeout);
         currentTime += step.duration || 1000;
       });
       
-      // Handle looping with count limit
-      if (effectData.loop && currentLoop < maxLoops - 1) {
+      // Handle looping with count limit or infinite
+      if (effectData.loop && (isInfiniteLoop || currentLoop < maxLoops - 1)) {
         currentLoop++;
-        setTimeout(() => {
+        const loopTimeout = setTimeout(() => {
           executeSteps();
         }, currentTime);
+        timeouts.push(loopTimeout);
       }
     };
     
+    // Store timeouts for this device so we can stop them later
+    this.activeEffects.set(target, timeouts);
     executeSteps();
+  }
+
+  // Method to stop an active effect
+  public stopEffect(target: string) {
+    const timeouts = this.activeEffects.get(target);
+    if (timeouts) {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+      this.activeEffects.delete(target);
+      console.log(`Stopped effect for device: ${target}`);
+    }
   }
 
   private parseColorFromStep(step: any): ColorHSBK {

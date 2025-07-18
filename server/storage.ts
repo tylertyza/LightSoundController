@@ -84,6 +84,7 @@ export class MemStorage implements IStorage {
           name: 'Strobe',
           description: 'Strobe light effect',
           loop: true,
+          loopCount: 0,
           steps: [
             { brightness: 100, color: '#FFFFFF', duration: 100, easing: 'linear' },
             { brightness: 0, color: '#FFFFFF', duration: 100, easing: 'linear' }
@@ -139,6 +140,7 @@ export class MemStorage implements IStorage {
           name: 'Breathe',
           description: 'Breathing brightness effect',
           loop: true,
+          loopCount: 0,
           steps: [
             { brightness: 20, color: '#4F46E5', duration: 2000, easing: 'ease-in-out' },
             { brightness: 80, color: '#4F46E5', duration: 2000, easing: 'ease-in-out' }

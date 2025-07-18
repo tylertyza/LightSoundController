@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **Lighting Effects Loop Count Fix** (July 18, 2025): Fixed infinite looping issue where breathe and strobe effects would continue indefinitely. Added proper loop count support to the LIFX UDP service and API routes. Effects now respect loop count parameter and stop after completing the specified number of loops. Default loop count is set to 1 for all effects triggered from the soundboard
+- **Infinite Loop Toggle System** (July 18, 2025): Updated breathe and strobe effects to use loop count 0 for infinite loops. Added toggle behavior where clicking an infinite loop effect turns it on/off. No progress bars shown for infinite effects. Added stop functionality to LIFX UDP service and API routes
 - **Responsive Panel Behavior** (July 18, 2025): Fixed mobile panel animations with smooth sliding transitions. Panels now start closed on mobile and open on desktop. Added responsive state management that automatically adjusts panel visibility based on screen size. Maintained desktop toggle functionality while ensuring mobile animations work properly
 - **Mobile Interface Bug Fixes** (July 18, 2025): Fixed mobile navigation issues with close buttons on all panels, proper backdrop click handling, and resolved lighting effects getting stuck in loops. Added proper termination logic for infinite lighting effects and improved mobile touch interactions
 - **Mobile-Responsive Interface** (July 18, 2025): Completely redesigned interface for mobile devices with overlay panels instead of fixed sidebars, responsive grid layouts, larger touch targets, and mobile-optimized input controls. Added proper touch manipulation, viewport optimization, and mobile-specific CSS styles
