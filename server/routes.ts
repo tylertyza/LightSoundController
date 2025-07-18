@@ -458,7 +458,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const deviceCustomJson = { ...customEffect, steps: filteredSteps };
         lifxService.applyCustomEffect(deviceIdStr, device.mac, device.ip, deviceCustomJson, finalLoopCount);
       }
-
       res.json({ success: true });
     } catch (error) {
       console.error('Error applying custom effect:', error);
