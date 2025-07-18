@@ -393,7 +393,7 @@ export default function Soundboard() {
       <div className="flex h-screen overflow-hidden">
         {/* Device Management Panel - Mobile: Overlay, Desktop: Sidebar */}
         <div className={`
-          transition-all duration-300 z-20
+          transition-all duration-300 ease-in-out z-20
           md:relative md:block
           ${isDevicePanelOpen ? 'fixed inset-0 md:relative md:w-80' : 'hidden md:w-0'}
           ${isDevicePanelOpen ? 'md:overflow-hidden' : 'overflow-hidden'}
@@ -401,11 +401,16 @@ export default function Soundboard() {
           {/* Mobile backdrop */}
           {isDevicePanelOpen && (
             <div 
-              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 transition-opacity duration-300 ease-in-out"
               onClick={() => setIsDevicePanelOpen(false)}
             />
           )}
-          <div className="relative z-20 h-full">
+          <div className={`
+            relative z-20 h-full
+            md:translate-x-0 md:transition-none
+            ${isDevicePanelOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+            transition-transform duration-300 ease-in-out
+          `}>
             <DeviceManagement
               devices={connectedDevices}
               onDiscoverDevices={handleDeviceDiscovery}
@@ -447,7 +452,7 @@ export default function Soundboard() {
         
         {/* Lighting Controls Panel - Mobile: Overlay, Desktop: Sidebar */}
         <div className={`
-          transition-all duration-300 z-20
+          transition-all duration-300 ease-in-out z-20
           md:relative md:block
           ${isLightingPanelOpen ? 'fixed inset-0 md:relative md:w-80' : 'hidden md:w-0'}
           ${isLightingPanelOpen ? 'md:overflow-hidden' : 'overflow-hidden'}
@@ -455,11 +460,16 @@ export default function Soundboard() {
           {/* Mobile backdrop */}
           {isLightingPanelOpen && (
             <div 
-              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 transition-opacity duration-300 ease-in-out"
               onClick={() => setIsLightingPanelOpen(false)}
             />
           )}
-          <div className="relative z-20 h-full">
+          <div className={`
+            relative z-20 h-full
+            md:translate-x-0 md:transition-none
+            ${isLightingPanelOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            transition-transform duration-300 ease-in-out
+          `}>
             <LightingControls devices={connectedDevices} />
           </div>
         </div>

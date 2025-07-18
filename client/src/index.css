@@ -165,18 +165,60 @@
   transform: scale(1.05);
 }
 
-/* Responsive design */
+/* Mobile panel animations */
 @media (max-width: 768px) {
-  .w-80 {
-    width: 100%;
-    position: fixed;
-    z-index: 40;
+  .panel-left-enter {
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
   }
   
-  .w-80.active {
+  .panel-left-enter-active {
     transform: translateX(0);
+  }
+  
+  .panel-left-exit {
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  .panel-left-exit-active {
+    transform: translateX(-100%);
+  }
+  
+  .panel-right-enter {
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  .panel-right-enter-active {
+    transform: translateX(0);
+  }
+  
+  .panel-right-exit {
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  .panel-right-exit-active {
+    transform: translateX(100%);
+  }
+  
+  .backdrop-enter {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .backdrop-enter-active {
+    opacity: 1;
+  }
+  
+  .backdrop-exit {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+  
+  .backdrop-exit-active {
+    opacity: 0;
   }
 }
 

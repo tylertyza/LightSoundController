@@ -169,12 +169,30 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
         if (config.color && colors.length === 0) {
           colors.push(`from-[${config.color}]`);
         }
+        
+        // Check for brightness/temperature values to create warm colors
+        if (colors.length === 0 && config.brightness !== undefined) {
+          if (config.temperature && config.temperature <= 3000) {
+            colors.push('from-amber-600');
+          } else if (config.temperature && config.temperature >= 5000) {
+            colors.push('from-blue-200');
+          } else {
+            colors.push('from-yellow-400');
+          }
+        }
       } catch (e) {
         // If JSON parsing fails, fall back to checking for color property
         if (scene.configuration?.color) {
           colors.push(`from-[${scene.configuration.color}]`);
         }
       }
+    }
+    
+    // Check for colors array in scene definition (for default scenes)
+    if (colors.length === 0 && scene.colors && Array.isArray(scene.colors)) {
+      scene.colors.forEach((color: string) => {
+        colors.push(`from-[${color}]`);
+      });
     }
     
     // Check for device-specific settings if no JSON colors found
@@ -184,6 +202,22 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
           colors.push(`from-[${setting.color}]`);
         }
       });
+    }
+    
+    // For default scenes, check the name for color hints
+    if (colors.length === 0) {
+      const sceneName = scene.name.toLowerCase();
+      if (sceneName.includes('movie') || sceneName.includes('night') || sceneName.includes('warm')) {
+        colors.push('from-amber-600');
+      } else if (sceneName.includes('focus') || sceneName.includes('bright') || sceneName.includes('daylight')) {
+        colors.push('from-blue-200');
+      } else if (sceneName.includes('party') || sceneName.includes('colorful')) {
+        colors.push('from-purple-500');
+      } else if (sceneName.includes('relax') || sceneName.includes('sunset')) {
+        colors.push('from-orange-400');
+      } else {
+        colors.push('from-slate-600'); // Default fallback
+      }
     }
     
     // Add default colors for gradient if we have some
