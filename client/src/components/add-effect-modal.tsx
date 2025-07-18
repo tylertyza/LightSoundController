@@ -63,6 +63,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
   const [customEffectLoop, setCustomEffectLoop] = useState(false);
   const [customEffectLoopCount, setCustomEffectLoopCount] = useState(1);
   const [customEffectGlobalDelay, setCustomEffectGlobalDelay] = useState(0);
+  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false);
 
   // Initialize form with editing scene data
   useEffect(() => {
@@ -188,7 +189,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         duration: 2000,
         configuration: {
           customJson: completeEffect
-        }
+        },
+        hiddenFromDashboard: hiddenFromDashboard
       };
       
       // Save as lighting effect
@@ -261,6 +263,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
     setCustomEffectLoop(false);
     setCustomEffectLoopCount(1);
     setCustomEffectGlobalDelay(0);
+    setHiddenFromDashboard(false);
     onClose();
   };
 
@@ -665,6 +668,18 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
                   className="bg-slate-800 border-slate-700 text-white"
                 />
               </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hiddenFromDashboard"
+                checked={hiddenFromDashboard}
+                onCheckedChange={(checked) => setHiddenFromDashboard(checked as boolean)}
+                className="border-slate-600"
+              />
+              <Label htmlFor="hiddenFromDashboard" className="text-white">
+                Hide from dashboard
+              </Label>
             </div>
 
             <div>

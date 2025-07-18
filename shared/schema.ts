@@ -57,6 +57,7 @@ export const lightEffects = pgTable("light_effects", {
   duration: integer("duration").notNull().default(1000),
   configuration: jsonb("configuration").notNull(),
   customJson: jsonb("custom_json"), // For custom JSON effects
+  hiddenFromDashboard: boolean("hidden_from_dashboard").notNull().default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

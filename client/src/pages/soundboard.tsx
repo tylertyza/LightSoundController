@@ -19,7 +19,7 @@ export default function Soundboard() {
   const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(true);
   const [isLightingPanelOpen, setIsLightingPanelOpen] = useState(true);
   const [availableLightingEffects, setAvailableLightingEffects] = useState<any[]>([]);
-  const [showLightingEffects, setShowLightingEffects] = useState(true);
+
   
   const { socket, sendMessage } = useWebSocket();
   const { playSound, setMasterVolume } = useAudio();
@@ -352,22 +352,10 @@ export default function Soundboard() {
                 </div>
               </div>
               
-              <div className="mb-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white">Effects</h3>
-                  <button
-                    onClick={() => setShowLightingEffects(!showLightingEffects)}
-                    className="text-sm text-slate-400 hover:text-white transition-colors"
-                  >
-                    {showLightingEffects ? 'Hide' : 'Show'} Lighting Effects
-                  </button>
-                </div>
-              </div>
-
               <SoundboardGrid
                 soundButtons={soundButtons}
                 scenes={scenes}
-                lightingEffects={showLightingEffects ? lightingEffects : []}
+                lightingEffects={lightingEffects.filter(effect => !effect.hiddenFromDashboard)}
                 onSoundButtonClick={handleSoundButtonClick}
                 onSceneClick={handleSceneClick}
                 onSceneEdit={handleSceneEdit}

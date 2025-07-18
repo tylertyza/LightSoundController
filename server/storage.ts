@@ -57,11 +57,11 @@ export class MemStorage implements IStorage {
   private initializeDefaultData() {
     // Initialize with default light effects
     const defaultEffects: InsertLightEffect[] = [
-      { name: 'Flash', type: 'flash', duration: 500, configuration: { intensity: 100 } },
-      { name: 'Strobe', type: 'strobe', duration: 2000, configuration: { frequency: 5, intensity: 100 } },
-      { name: 'Fade', type: 'fade', duration: 1000, configuration: { fadeIn: 500, fadeOut: 500 } },
-      { name: 'Color Cycle', type: 'cycle', duration: 3000, configuration: { colors: ['#ff0000', '#00ff00', '#0000ff'] } },
-      { name: 'Breathe', type: 'breathe', duration: 2000, configuration: { minBrightness: 10, maxBrightness: 100 } },
+      { name: 'Flash', type: 'flash', duration: 500, configuration: { intensity: 100 }, hiddenFromDashboard: false },
+      { name: 'Strobe', type: 'strobe', duration: 2000, configuration: { frequency: 5, intensity: 100 }, hiddenFromDashboard: false },
+      { name: 'Fade', type: 'fade', duration: 1000, configuration: { fadeIn: 500, fadeOut: 500 }, hiddenFromDashboard: false },
+      { name: 'Color Cycle', type: 'cycle', duration: 3000, configuration: { colors: ['#ff0000', '#00ff00', '#0000ff'] }, hiddenFromDashboard: false },
+      { name: 'Breathe', type: 'breathe', duration: 2000, configuration: { minBrightness: 10, maxBrightness: 100 }, hiddenFromDashboard: false },
     ];
 
     defaultEffects.forEach(effect => {
@@ -265,7 +265,8 @@ export class MemStorage implements IStorage {
     const effect: LightEffect = { 
       ...insertEffect, 
       id,
-      duration: insertEffect.duration || 1000
+      duration: insertEffect.duration || 1000,
+      hiddenFromDashboard: insertEffect.hiddenFromDashboard || false
     };
     this.lightEffects.set(id, effect);
     return effect;
