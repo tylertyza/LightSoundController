@@ -574,6 +574,7 @@ export default function Soundboard() {
         onClose={handleModalClose}
         onSaveSound={handleSoundSave}
         onSaveScene={editingLightingEffect ? handleLightingEffectSave : (editingScene ? handleSceneUpdate : handleSceneSave)}
+        onSaveLightingEffect={handleLightingEffectSave}
         devices={connectedDevices}
         lightEffects={lightingEffects}
         editingLightingEffect={editingLightingEffect}

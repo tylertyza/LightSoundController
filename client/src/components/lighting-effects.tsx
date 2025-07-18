@@ -132,7 +132,11 @@ export default function LightingEffects() {
     if (!newEffectName || !newEffectJson) return;
 
     try {
-      const parsedJson = JSON.parse(newEffectJson);
+      let parsedJson = JSON.parse(newEffectJson);
+      // If the user pasted a raw array, wrap it in { steps: [...] }
+      if (Array.isArray(parsedJson)) {
+        parsedJson = { steps: parsedJson };
+      }
       const effectData = {
         name: newEffectName,
         description: newEffectDescription,
@@ -163,7 +167,11 @@ export default function LightingEffects() {
     if (!editingEffect || !newEffectName || !newEffectJson) return;
 
     try {
-      const parsedJson = JSON.parse(newEffectJson);
+      let parsedJson = JSON.parse(newEffectJson);
+      // If the user pasted a raw array, wrap it in { steps: [...] }
+      if (Array.isArray(parsedJson)) {
+        parsedJson = { steps: parsedJson };
+      }
       const effectData = {
         name: newEffectName,
         description: newEffectDescription,

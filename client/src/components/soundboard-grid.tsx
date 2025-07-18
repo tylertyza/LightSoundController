@@ -24,6 +24,8 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
   const [touchHandled, setTouchHandled] = useState<Set<string>>(new Set());
   // Store original device states for looping effects
   const originalDeviceStates = useRef<Map<string, any>>(new Map());
+  // Add a lockout for lighting effect toggles
+  const lightingEffectLockRef = useRef(false);
   
   // Separate items by type
   const soundItems = soundButtons.map(button => ({ ...button, type: 'sound' as const }));
@@ -35,6 +37,9 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
     
     // For lighting effects, handle toggle logic
     if (item.type === 'lighting') {
+      if (lightingEffectLockRef.current) return; // Prevent rapid toggling
+      lightingEffectLockRef.current = true;
+      setTimeout(() => { lightingEffectLockRef.current = false; }, 500); // 500ms lock
       const isCurrentlyActive = persistentActiveItems.has(itemKey);
       
       if (isCurrentlyActive) {

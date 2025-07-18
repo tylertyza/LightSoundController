@@ -354,9 +354,15 @@ export class LifxUDPService extends EventEmitter {
   }
 
   public async triggerEffect(target: string, address: string, effectType: string, duration: number = 1000) {
+    // Stop any existing effect for this device
+    this.stopEffect(target, address);
+
+    // Remove hard cancellation for this target (new effect starts)
+    this.hardCancelled.delete(target);
+
     // Save current state before applying effect
     await this.saveDeviceState(target);
-    
+
     switch (effectType) {
       case 'flash':
         this.flashEffect(target, address, duration);
@@ -374,7 +380,7 @@ export class LifxUDPService extends EventEmitter {
         this.cycleEffect(target, address, duration);
         break;
     }
-    
+
     // Restore state after effect completes
     setTimeout(() => {
       this.restoreDeviceState(target, address);
@@ -470,6 +476,9 @@ export class LifxUDPService extends EventEmitter {
   // Per-device cancellation tokens for async effect loops
   private effectCancelTokens: Map<string, { cancelled: boolean }> = new Map();
 
+  // Track per-device timers for deleting saved state and blockedUntil
+  private savedStateDeleteTimers: Map<string, NodeJS.Timeout> = new Map();
+
   // Save device state before applying effects
   private async saveDeviceState(target: string) {
     // Only save state if we don't already have it saved (to prevent overwriting during loops)
@@ -525,17 +534,24 @@ export class LifxUDPService extends EventEmitter {
       }, 500);
       // Block all further commands for 1.5 seconds after restore
       this.blockedUntil.set(target, Date.now() + 1500);
-      setTimeout(() => {
+      // Cancel any previous delete timer for this device
+      const prevTimer = this.savedStateDeleteTimers.get(target);
+      if (prevTimer) clearTimeout(prevTimer);
+      // Schedule deletion of saved state and unblock
+      const deleteTimer = setTimeout(() => {
         this.savedDeviceStates.delete(target); // Always clear after restoration
         this.blockedUntil.delete(target); // Unblock after window
+        this.savedStateDeleteTimers.delete(target);
       }, 1500);
+      this.savedStateDeleteTimers.set(target, deleteTimer);
     }, 100);
   }
 
   // New method to handle complex JSON effects
-  public async applyCustomEffect(target: string, address: string, effectData: any, loopCount: number = 1) {
-    if (this.busyDevices.has(target)) {
-      console.log(`[applyCustomEffect] Device ${target} is busy, ignoring new effect request at ${new Date().toISOString()}`);
+  public async applyCustomEffect(deviceIdStr: string, mac: string, ip: string, effectData: any, loopCount: number = 1) {
+    console.log('[applyCustomEffect] Received effectData:', JSON.stringify(effectData));
+    if (this.busyDevices.has(mac)) {
+      console.log(`[applyCustomEffect] Device ${mac} is busy, ignoring new effect request at ${new Date().toISOString()}`);
       return;
     }
     if (!effectData || !effectData.steps || !Array.isArray(effectData.steps)) {
@@ -544,17 +560,24 @@ export class LifxUDPService extends EventEmitter {
     }
 
     // Stop any existing effect for this device
-    this.stopEffect(target, address);
+    this.stopEffect(mac, ip);
 
     // Remove hard cancellation for this target (new effect starts)
-    this.hardCancelled.delete(target);
+    this.hardCancelled.delete(mac);
+
+    // Cancel any pending saved state deletion timer for this device
+    const prevTimer = this.savedStateDeleteTimers.get(mac);
+    if (prevTimer) {
+      clearTimeout(prevTimer);
+      this.savedStateDeleteTimers.delete(mac);
+    }
 
     // Save current device state before applying effect
-    await this.saveDeviceState(target);
+    await this.saveDeviceState(mac);
 
     // Create a new cancellation token for this effect
     const cancelToken = { cancelled: false };
-    this.effectCancelTokens.set(target, cancelToken);
+    this.effectCancelTokens.set(mac, cancelToken);
 
     let currentLoop = 0;
     const maxLoops = loopCount || 1;
@@ -566,21 +589,32 @@ export class LifxUDPService extends EventEmitter {
       while (!cancelToken.cancelled && (isInfiniteLoop || currentLoop < maxLoops)) {
         for (let i = 0; i < effectData.steps.length; i++) {
           if (cancelToken.cancelled) {
-            console.log(`[effectStep] CANCELLED for device ${target} at step ${i + 1} (token) at ${new Date().toISOString()}`);
+            console.log(`[effectStep] CANCELLED for device ${mac} at step ${i + 1} (token) at ${new Date().toISOString()}`);
             return;
           }
           const step = effectData.steps[i];
-          console.log(`[effectStep] RUNNING for device ${target} at step ${i + 1} at ${new Date().toISOString()}`);
-          const color = this.parseColorFromStep(step);
+          // Only run this step if this device is included in deviceIds
+          if (Array.isArray(step.deviceIds) && step.deviceIds.length > 0) {
+            const deviceIdStrings = step.deviceIds.map(String);
+            if (!deviceIdStrings.includes(deviceIdStr)) {
+              continue;
+            }
+          }
+          console.log(`[effectStep] RUNNING for device ${mac} (ID: ${deviceIdStr}) at step ${i + 1} at ${new Date().toISOString()}`);
+          let color = this.parseColorFromStep(step);
+          // Ensure kelvin is set to a valid value if not set by color/temperature
+          if (!color.kelvin || color.kelvin === 0) {
+            color.kelvin = 3500;
+          }
           const duration = step.duration || 1000;
-          this.setColor(target, address, color, duration);
+          this.setColor(mac, ip, color, duration);
           await delay(duration);
         }
         currentLoop++;
       }
       // After all loops, restore state if not cancelled
       if (!cancelToken.cancelled) {
-        this.restoreDeviceState(target, address);
+        this.restoreDeviceState(mac, ip);
       }
     };
 

@@ -641,6 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const effectId = parseInt(req.params.id);
       const { loopCount = 1 } = req.body;
       const effect = await storage.getLightEffect(effectId);
+      console.log('[light-effects/:id/apply] Loaded effect:', JSON.stringify(effect));
       if (!effect) {
         return res.status(404).json({ error: 'Light effect not found' });
       }
@@ -660,12 +661,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           temperature: device.temperature
         });
       }
-      // Use loop count from custom JSON if available, otherwise use passed loopCount
-      const finalLoopCount = effect.customJson?.loopCount !== undefined ? effect.customJson.loopCount : loopCount;
+      // Use customJson from either top-level or configuration
+      let customJson = effect.customJson || effect.configuration?.customJson;
+      // PATCH: If customJson is just an array, wrap it in a default custom effect object
+      if (Array.isArray(customJson)) {
+        customJson = {
+          name: effect.name || 'Custom Effect',
+          description: effect.description || '',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: customJson
+        };
+      }
+      const finalLoopCount = customJson?.loopCount !== undefined ? customJson.loopCount : loopCount;
       // Apply custom JSON effect if available
-      if (effect.customJson) {
-        for (const device of targetDevices as Device[]) {
-          lifxService.applyCustomEffect(device.mac, device.ip, effect.customJson, finalLoopCount);
+      if (customJson) {
+        for (const device of targetDevices as any[]) {
+          // Filter steps for this device
+          const deviceIdStr = device.id.toString();
+          const filteredSteps = (customJson.steps || []).filter(
+            (step: any) => Array.isArray(step.deviceIds) && step.deviceIds.map(String).includes(deviceIdStr)
+          );
+          if (filteredSteps.length === 0) continue;
+          // Build a customJson for this device
+          const deviceCustomJson = { ...customJson, steps: filteredSteps };
+          // Pass deviceIdStr as the first argument for filtering, and MAC/IP for UDP
+          lifxService.applyCustomEffect(deviceIdStr, device.mac, device.ip, deviceCustomJson, finalLoopCount);
         }
         broadcast({ type: 'custom_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id.toString()) } });
       } else {
@@ -673,7 +695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const device of targetDevices as Device[]) {
           await lifxService.triggerEffect(device.mac, device.ip, effect.type, effect.duration);
         }
-        broadcast({ type: 'light_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id.toString()) } });
+        broadcast({ type: 'custom_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id.toString()) } });
       }
       // Store the saved states for later restoration (if not infinite loop)
       if (finalLoopCount !== 0) {

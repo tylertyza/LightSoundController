@@ -24,6 +24,7 @@ interface AddEffectModalProps {
   onClose: () => void;
   onSaveSound: (data: InsertSoundButton & { audioFile: File }) => void;
   onSaveScene: (data: InsertScene & { turnOnIfOff?: boolean; deviceSettings?: any }) => void;
+  onSaveLightingEffect: (data: any) => void; // <-- add this
   onDeleteScene?: (id: number) => void;
   devices: Device[];
   editingScene?: Scene | null;
@@ -31,7 +32,7 @@ interface AddEffectModalProps {
   lightEffects: LightEffect[];
 }
 
-export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDeleteScene, devices, editingScene, editingLightingEffect, lightEffects }: AddEffectModalProps) {
+export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSaveLightingEffect, onDeleteScene, devices, editingScene, editingLightingEffect, lightEffects }: AddEffectModalProps) {
   const [effectType, setEffectType] = useState<'sound' | 'scene' | 'lighting'>('sound');
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   
@@ -277,8 +278,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         colors: extractedColors,
         hiddenFromDashboard: hiddenFromDashboard
       };
-      // Use the onSaveScene callback to handle both create and update
-      onSaveScene(lightingEffect);
+      // Use the onSaveLightingEffect callback for new lighting effects
+      onSaveLightingEffect(lightingEffect);
       
     } else {
       if (!sceneName) return;
