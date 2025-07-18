@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Device, Scene } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import LightingEffects from "./lighting-effects";
 
@@ -14,10 +15,44 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const [selectedColor, setSelectedColor] = useState("#3b82f6");
   const [brightness, setBrightness] = useState(80);
   const [temperature, setTemperature] = useState(3500);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<number[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const adoptedDevices = devices.filter(d => d.isAdopted && d.isOnline);
+  const selectedDevices = adoptedDevices.filter(d => selectedDeviceIds.includes(d.id));
+  
+  // Update controls when device selection changes
+  useEffect(() => {
+    if (selectedDevices.length === 1) {
+      // Single device selected - show its current values
+      const device = selectedDevices[0];
+      setBrightness(device.brightness || 80);
+      setTemperature(device.temperature || 3500);
+    } else if (selectedDevices.length > 1) {
+      // Multiple devices - show average values
+      const avgBrightness = selectedDevices.reduce((sum, d) => sum + (d.brightness || 80), 0) / selectedDevices.length;
+      const avgTemperature = selectedDevices.reduce((sum, d) => sum + (d.temperature || 3500), 0) / selectedDevices.length;
+      setBrightness(Math.round(avgBrightness));
+      setTemperature(Math.round(avgTemperature));
+    }
+  }, [selectedDevices]);
+  
+  const handleDeviceSelection = (deviceId: number, selected: boolean) => {
+    setSelectedDeviceIds(prev => 
+      selected 
+        ? [...prev, deviceId]
+        : prev.filter(id => id !== deviceId)
+    );
+  };
+  
+  const handleSelectAll = () => {
+    setSelectedDeviceIds(adoptedDevices.map(d => d.id));
+  };
+  
+  const handleDeselectAll = () => {
+    setSelectedDeviceIds([]);
+  };
   
   const powerMutation = useMutation({
     mutationFn: async ({ deviceId, power }: { deviceId: number; power: boolean }) => {
@@ -87,12 +122,14 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
     
+    if (selectedDeviceIds.length === 0) return;
+    
     // Convert hex to HSL for LIFX
     const hue = 0; // Simplified for demo
     const saturation = 65535;
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
-    adoptedDevices.forEach(device => {
+    selectedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
         color: { hue, saturation, brightness: brightnessValue, kelvin: temperature }
@@ -103,9 +140,11 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const handleBrightnessChange = (newBrightness: number) => {
     setBrightness(newBrightness);
     
+    if (selectedDeviceIds.length === 0) return;
+    
     const brightnessValue = Math.round((newBrightness / 100) * 65535);
     
-    adoptedDevices.forEach(device => {
+    selectedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
         color: { hue: 0, saturation: 0, brightness: brightnessValue, kelvin: temperature }
@@ -116,9 +155,11 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const handleTemperatureChange = (newTemperature: number) => {
     setTemperature(newTemperature);
     
+    if (selectedDeviceIds.length === 0) return;
+    
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
-    adoptedDevices.forEach(device => {
+    selectedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
         color: { hue: 0, saturation: 0, brightness: brightnessValue, kelvin: newTemperature }
@@ -143,7 +184,29 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       
       {/* Adopted Devices */}
       <div className="p-4 border-b border-slate-700">
-        <h3 className="text-sm font-medium text-slate-300 mb-3">Adopted Devices</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-slate-300">Adopted Devices</h3>
+          {adoptedDevices.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+                className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700"
+              >
+                Select All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDeselectAll}
+                className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700"
+              >
+                Clear
+              </Button>
+            </div>
+          )}
+        </div>
         {adoptedDevices.length === 0 ? (
           <div className="text-center py-4">
             <i className="fas fa-plus-circle text-slate-600 text-2xl mb-2"></i>
@@ -155,10 +218,19 @@ export default function LightingControls({ devices }: LightingControlsProps) {
             {adoptedDevices.map((device) => (
               <div
                 key={device.id}
-                className="bg-slate-900 rounded-lg p-2 border border-slate-600"
+                className={`bg-slate-900 rounded-lg p-2 border transition-colors ${
+                  selectedDeviceIds.includes(device.id) 
+                    ? 'border-blue-500 bg-blue-950' 
+                    : 'border-slate-600'
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`device-${device.id}`}
+                      checked={selectedDeviceIds.includes(device.id)}
+                      onCheckedChange={(checked) => handleDeviceSelection(device.id, checked as boolean)}
+                    />
                     <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
                     <span className="text-sm font-medium text-white">{device.label}</span>
                   </div>
@@ -241,7 +313,12 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       
       {/* Color Control */}
       <div className="p-4 border-b border-slate-700">
-        <h3 className="text-sm font-medium text-slate-300 mb-3">Color & Brightness</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-slate-300">Color & Brightness</h3>
+          <div className="text-xs text-slate-400">
+            {selectedDeviceIds.length === 0 ? 'Select devices above' : `${selectedDeviceIds.length} device${selectedDeviceIds.length > 1 ? 's' : ''} selected`}
+          </div>
+        </div>
         
         {/* Color Picker */}
         <div className="mb-4">
@@ -250,20 +327,28 @@ export default function LightingControls({ devices }: LightingControlsProps) {
             type="color"
             value={selectedColor}
             onChange={(e) => handleColorChange(e.target.value)}
-            className="w-full h-10 bg-slate-900 border border-slate-600 rounded cursor-pointer"
+            disabled={selectedDeviceIds.length === 0}
+            className="w-full h-10 bg-slate-900 border border-slate-600 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
         
         {/* Brightness Slider */}
         <div className="mb-4">
-          <label className="block text-xs text-slate-400 mb-2">Brightness</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-slate-400">Brightness</label>
+            <span className="text-xs text-slate-300 font-medium">{brightness}%</span>
+          </div>
           <input
             type="range"
             min="0"
             max="100"
             value={brightness}
             onChange={(e) => handleBrightnessChange(parseInt(e.target.value))}
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+            disabled={selectedDeviceIds.length === 0}
+            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${brightness}%, #374151 ${brightness}%, #374151 100%)`
+            }}
           />
           <div className="flex justify-between text-xs text-slate-500 mt-1">
             <span>0%</span>
@@ -273,18 +358,25 @@ export default function LightingControls({ devices }: LightingControlsProps) {
         
         {/* Temperature Slider */}
         <div>
-          <label className="block text-xs text-slate-400 mb-2">Temperature</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-slate-400">Temperature</label>
+            <span className="text-xs text-slate-300 font-medium">{temperature}K</span>
+          </div>
           <input
             type="range"
             min="2500"
             max="9000"
             value={temperature}
             onChange={(e) => handleTemperatureChange(parseInt(e.target.value))}
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+            disabled={selectedDeviceIds.length === 0}
+            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((temperature - 2500) / (9000 - 2500)) * 100}%, #374151 ${((temperature - 2500) / (9000 - 2500)) * 100}%, #374151 100%)`
+            }}
           />
           <div className="flex justify-between text-xs text-slate-500 mt-1">
-            <span>Warm</span>
-            <span>Cool</span>
+            <span>Warm (2500K)</span>
+            <span>Cool (9000K)</span>
           </div>
         </div>
       </div>
