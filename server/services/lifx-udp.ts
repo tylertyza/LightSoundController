@@ -390,9 +390,10 @@ export class LifxUDPService extends EventEmitter {
   private flashEffect(target: string, address: string, duration: number) {
     // Quick flash to white and back
     this.setColor(target, address, { hue: 0, saturation: 0, brightness: 65535, kelvin: 6500 }, 0);
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       this.setColor(target, address, { hue: 0, saturation: 0, brightness: 32768, kelvin: 3500 }, 500);
     }, duration);
+    this.registerEffectTimeout(target, timeout);
   }
 
   private strobeEffect(target: string, address: string, duration: number) {
@@ -400,13 +401,15 @@ export class LifxUDPService extends EventEmitter {
     const cycles = Math.floor(duration / (interval * 2));
     
     for (let i = 0; i < cycles; i++) {
-      setTimeout(() => {
+      const onTimeout = setTimeout(() => {
         this.setColor(target, address, { hue: 0, saturation: 0, brightness: 65535, kelvin: 6500 }, 0);
       }, i * interval * 2);
-      
-      setTimeout(() => {
+      this.registerEffectTimeout(target, onTimeout);
+
+      const offTimeout = setTimeout(() => {
         this.setColor(target, address, { hue: 0, saturation: 0, brightness: 0, kelvin: 3500 }, 0);
       }, (i * interval * 2) + interval);
+      this.registerEffectTimeout(target, offTimeout);
     }
   }
 
@@ -415,10 +418,11 @@ export class LifxUDPService extends EventEmitter {
     const stepDuration = duration / steps;
     
     for (let i = 0; i <= steps; i++) {
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         const brightness = Math.round((i / steps) * 65535);
         this.setColor(target, address, { hue: 0, saturation: 0, brightness, kelvin: 3500 }, stepDuration);
       }, i * stepDuration);
+      this.registerEffectTimeout(target, timeout);
     }
   }
 
@@ -429,9 +433,10 @@ export class LifxUDPService extends EventEmitter {
     this.setColor(target, address, { hue: 0, saturation: 0, brightness: 65535, kelvin: 3500 }, halfDuration);
     
     // Fade out
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       this.setColor(target, address, { hue: 0, saturation: 0, brightness: 16384, kelvin: 3500 }, halfDuration);
     }, halfDuration);
+    this.registerEffectTimeout(target, timeout);
   }
 
   private cycleEffect(target: string, address: string, duration: number) {
@@ -446,11 +451,18 @@ export class LifxUDPService extends EventEmitter {
     const stepDuration = duration / colors.length;
     
     colors.forEach((color, index) => {
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         // Use stepDuration for smooth fading to next color
         this.setColor(target, address, color, Math.round(stepDuration * 0.8));
       }, index * stepDuration);
+      this.registerEffectTimeout(target, timeout);
     });
+  }
+
+  private registerEffectTimeout(target: string, timeout: NodeJS.Timeout) {
+    const timeouts = this.activeEffects.get(target) || [];
+    timeouts.push(timeout);
+    this.activeEffects.set(target, timeouts);
   }
 
   // Store active effects to allow stopping them
