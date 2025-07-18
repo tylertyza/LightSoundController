@@ -159,24 +159,30 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                     <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
                     <span className="text-sm font-medium text-white">{device.label}</span>
                   </div>
-                  <button
-                    onClick={() => {
-                      console.log(`Toggling power for device ${device.id}: ${device.power} -> ${!device.power}`);
-                      powerMutation.mutate({ deviceId: device.id, power: !device.power });
-                    }}
-                    disabled={powerMutation.isPending}
-                    className={`text-xs px-2 py-1 rounded transition-colors ${
-                      device.power
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                        : 'bg-slate-600 hover:bg-slate-700 text-slate-300'
-                    } ${powerMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {powerMutation.isPending ? (
-                      <i className="fas fa-spinner fa-spin"></i>
-                    ) : (
-                      <i className={`fas ${device.power ? 'fa-lightbulb' : 'fa-power-off'}`}></i>
-                    )}
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <div className={`px-2 py-1 rounded text-xs font-medium ${
+                      device.power 
+                        ? 'bg-emerald-600 text-white' 
+                        : 'bg-slate-600 text-slate-300'
+                    }`}>
+                      <i className={`fas ${device.power ? 'fa-lightbulb' : 'fa-power-off'} mr-1`}></i>
+                      {device.power ? 'On' : 'Off'}
+                    </div>
+                    <button
+                      onClick={() => {
+                        console.log(`Toggling power for device ${device.id}: ${device.power} -> ${!device.power}`);
+                        powerMutation.mutate({ deviceId: device.id, power: !device.power });
+                      }}
+                      disabled={powerMutation.isPending}
+                      className="text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                    >
+                      {powerMutation.isPending ? (
+                        <i className="fas fa-spinner fa-spin"></i>
+                      ) : (
+                        <i className="fas fa-power-off"></i>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
