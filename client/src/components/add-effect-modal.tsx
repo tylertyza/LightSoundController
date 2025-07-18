@@ -56,6 +56,11 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
   const [sceneFadeOut, setSceneFadeOut] = useState(1000);
   const [turnOnIfOff, setTurnOnIfOff] = useState(true);
   const [deviceSettings, setDeviceSettings] = useState<{[key: string]: {color: string, brightness: number}}>({});
+  
+  // Custom lighting effect form fields
+  const [customEffectLoop, setCustomEffectLoop] = useState(false);
+  const [customEffectLoopCount, setCustomEffectLoopCount] = useState(1);
+  const [customEffectGlobalDelay, setCustomEffectGlobalDelay] = useState(0);
 
   // Initialize form with editing scene data
   useEffect(() => {
@@ -162,6 +167,30 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
     } else if (effectType === 'lighting') {
       if (!sceneName) return;
       
+      // Parse and validate the steps JSON
+      let stepsArray = [];
+      if (customEffectJson) {
+        try {
+          stepsArray = JSON.parse(customEffectJson);
+          if (!Array.isArray(stepsArray)) {
+            throw new Error('Steps must be an array');
+          }
+        } catch (error) {
+          console.error('Invalid steps JSON:', error);
+          return;
+        }
+      }
+      
+      // Create a complete lighting effect JSON
+      const completeEffect = {
+        name: sceneName,
+        description: sceneDescription || undefined,
+        loop: customEffectLoop,
+        loopCount: customEffectLoopCount,
+        globalDelay: customEffectGlobalDelay,
+        steps: stepsArray
+      };
+      
       // Create a lighting effect
       const lightingEffect = {
         name: sceneName,
@@ -169,7 +198,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         type: 'custom',
         duration: 2000,
         configuration: {
-          customJson: customEffectJson ? JSON.parse(customEffectJson) : null
+          customJson: completeEffect
         }
       };
       
@@ -239,6 +268,9 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
     setSelectedDevices([]);
     setTurnOnIfOff(true);
     setDeviceSettings({});
+    setCustomEffectLoop(false);
+    setCustomEffectLoopCount(1);
+    setCustomEffectGlobalDelay(0);
     onClose();
   };
 
@@ -259,36 +291,29 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
     }
   };
 
-  const exampleJson = {
-    name: "Rainbow Wave",
-    description: "A wave of colors across lights",
-    loop: true,
-    loopCount: 3,
-    globalDelay: 0,
-    steps: [
-      {
-        brightness: 100,
-        color: "#ff0000",
-        duration: 1000,
-        easing: { type: "ease-in-out", duration: 200 },
-        deviceIds: ["1", "2"]
-      },
-      {
-        brightness: 80,
-        color: "#00ff00",
-        duration: 1000,
-        easing: { type: "ease-in-out", duration: 200 },
-        deviceIds: ["1", "2"]
-      },
-      {
-        brightness: 60,
-        color: "#0000ff",
-        duration: 1000,
-        easing: { type: "ease-in-out", duration: 200 },
-        deviceIds: ["1", "2"]
-      }
-    ]
-  };
+  const exampleSteps = [
+    {
+      brightness: 100,
+      color: "#ff0000",
+      duration: 1000,
+      easing: { type: "ease-in-out", duration: 200 },
+      deviceIds: ["1", "2"]
+    },
+    {
+      brightness: 80,
+      color: "#00ff00",
+      duration: 1000,
+      easing: { type: "ease-in-out", duration: 200 },
+      deviceIds: ["1", "2"]
+    },
+    {
+      brightness: 60,
+      color: "#0000ff",
+      duration: 1000,
+      easing: { type: "ease-in-out", duration: 200 },
+      deviceIds: ["1", "2"]
+    }
+  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -593,21 +618,60 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
               />
             </div>
 
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-white">Loop Effect</Label>
+                <Select value={customEffectLoop.toString()} onValueChange={(value) => setCustomEffectLoop(value === 'true')}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectItem value="false" className="text-white">No Loop</SelectItem>
+                    <SelectItem value="true" className="text-white">Loop</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-white">Loop Count</Label>
+                <Input
+                  type="number"
+                  value={customEffectLoopCount}
+                  onChange={(e) => setCustomEffectLoopCount(parseInt(e.target.value) || 1)}
+                  min="1"
+                  max="10"
+                  disabled={!customEffectLoop}
+                  className="bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-white">Global Delay (ms)</Label>
+                <Input
+                  type="number"
+                  value={customEffectGlobalDelay}
+                  onChange={(e) => setCustomEffectGlobalDelay(parseInt(e.target.value) || 0)}
+                  min="0"
+                  max="5000"
+                  className="bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+            </div>
+
             <div>
-              <Label className="text-white">Custom JSON Effect</Label>
+              <Label className="text-white">Effect Steps (JSON Array)</Label>
               <Textarea
                 value={customEffectJson}
                 onChange={(e) => setCustomEffectJson(e.target.value)}
-                placeholder="Enter custom JSON effect..."
+                placeholder="Enter steps array only..."
                 className="bg-slate-800 border-slate-700 text-white h-32 font-mono text-sm"
               />
               <div className="mt-2 text-xs text-slate-400">
                 <details>
-                  <summary className="cursor-pointer hover:text-slate-300">View JSON example</summary>
+                  <summary className="cursor-pointer hover:text-slate-300">View steps example</summary>
                   <pre className="mt-2 bg-slate-900 p-2 rounded text-xs overflow-x-auto">
-{JSON.stringify(exampleJson, null, 2)}
+{JSON.stringify(exampleSteps, null, 2)}
                   </pre>
                 </details>
+                <p className="mt-2">Only enter the steps array - the name, description, loop settings will be added automatically from the form fields above.</p>
               </div>
             </div>
           </TabsContent>
