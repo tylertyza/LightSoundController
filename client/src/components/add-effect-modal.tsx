@@ -402,15 +402,15 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         <Tabs value={effectType} onValueChange={(value) => setEffectType(value as 'sound' | 'scene' | 'lighting')}>
           {!editingScene && (
             <TabsList className="grid w-full grid-cols-3 bg-slate-800">
-              <TabsTrigger value="sound" className="data-[state=active]:bg-slate-700 text-white">
+              <TabsTrigger value="sound" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-white">
                 <Volume2 className="w-4 h-4 mr-2" />
                 Sound Effect
               </TabsTrigger>
-              <TabsTrigger value="scene" className="data-[state=active]:bg-slate-700 text-white">
+              <TabsTrigger value="scene" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-white">
                 <Lightbulb className="w-4 h-4 mr-2" />
                 Lighting Scene
               </TabsTrigger>
-              <TabsTrigger value="lighting" className="data-[state=active]:bg-slate-700 text-white">
+              <TabsTrigger value="lighting" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-white">
                 <Zap className="w-4 h-4 mr-2" />
                 Lighting Effects
               </TabsTrigger>
