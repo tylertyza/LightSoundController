@@ -22,7 +22,7 @@ import LightingEffects from "./lighting-effects";
 interface AddEffectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveSound: (data: InsertSoundButton & { audioFile: File }) => void;
+  onSaveSound: (data: Omit<InsertSoundButton, 'audioFile'> & { audioFile: File }) => void;
   onSaveScene: (data: InsertScene & { turnOnIfOff?: boolean; deviceSettings?: any }) => void;
   onSaveLightingEffect: (data: any) => void; // <-- add this
   onDeleteScene?: (id: number) => void;
@@ -85,7 +85,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
       let jsonData = (editingScene as any).customJson;
       if (!jsonData) {
         // Convert legacy scene to JSON format
-        const config = editingScene.configuration;
+        const config = editingScene.configuration as any;
         jsonData = {
           name: editingScene.name,
           description: editingScene.description || '',
@@ -106,9 +106,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
         };
       }
       
-      // Extract just the steps array for the JSON editor
-      const stepsArray = jsonData.steps || [];
-      setCustomEffectJson(JSON.stringify(stepsArray, null, 2));
+      // Provide full custom JSON for the editor
+      setCustomEffectJson(JSON.stringify(jsonData, null, 2));
       
       // Set form fields from JSON data
       setCustomEffectLoop(jsonData.loop || false);
@@ -142,19 +141,19 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
     if (editingLightingEffect) {
       setEffectType('lighting');
       setSceneName(editingLightingEffect.name);
-      setSceneDescription(editingLightingEffect.description || '');
-      setSceneIcon(editingLightingEffect.icon || 'zap');
+      setSceneDescription((editingLightingEffect as any).description || '');
+      setSceneIcon((editingLightingEffect as any).icon || 'zap');
       
       // All effects now show as custom with JSON data
       setSceneType('custom');
       
       // Convert effect to JSON format for editing
-      let jsonData = editingLightingEffect.customJson;
+      let jsonData = editingLightingEffect.customJson as any;
       if (!jsonData) {
         // Convert legacy effect to JSON format
         jsonData = {
           name: editingLightingEffect.name,
-          description: editingLightingEffect.description || '',
+          description: (editingLightingEffect as any).description || '',
           loop: false,
           loopCount: 1,
           globalDelay: 0,
@@ -171,9 +170,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
         };
       }
       
-      // Extract just the steps array for the JSON editor
-      const stepsArray = jsonData.steps || [];
-      setCustomEffectJson(JSON.stringify(stepsArray, null, 2));
+      // Provide full custom JSON for the editor
+      setCustomEffectJson(JSON.stringify(jsonData, null, 2));
       
       // Set form fields from JSON data
       setCustomEffectLoop(jsonData.loop || false);
@@ -234,19 +232,17 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
       });
     } else if (effectType === 'lighting') {
       if (!sceneName) return;
-      // Parse and validate the steps JSON
-      let stepsArray = [];
+      // Parse and validate the custom effect JSON
+      let customEffect: any = {};
       if (customEffectJson) {
         try {
-          stepsArray = JSON.parse(customEffectJson);
-          if (!Array.isArray(stepsArray)) {
-            throw new Error('Steps must be an array');
-          }
+          customEffect = JSON.parse(customEffectJson);
         } catch (error) {
-          console.error('Invalid steps JSON:', error);
+          console.error('Invalid effect JSON:', error);
           return;
         }
       }
+      const stepsArray = Array.isArray(customEffect.steps) ? customEffect.steps : [];
       // Extract colors from steps for gradient
       let extractedColors = stepsArray
         .map((step: any) => step.color)
@@ -261,9 +257,9 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
       const completeEffect = {
         name: sceneName,
         description: sceneDescription || undefined,
-        loop: customEffectLoop,
-        loopCount: customEffectLoopCount,
-        globalDelay: customEffectGlobalDelay,
+        loop: customEffect.loop ?? customEffectLoop,
+        loopCount: customEffect.loopCount ?? customEffectLoopCount,
+        globalDelay: customEffect.globalDelay ?? customEffectGlobalDelay,
         steps: stepsArray
       };
       // Create a lighting effect
@@ -397,6 +393,15 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
     }
   ];
 
+  const exampleEffect = {
+    name: "My Effect",
+    description: "Example lighting effect",
+    loop: false,
+    loopCount: 1,
+    globalDelay: 0,
+    steps: exampleSteps
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
@@ -474,7 +479,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
                     <SelectItem value="none" className="text-white">No lighting effect</SelectItem>
-                    {lightEffects.filter(effect => effect.customJson?.loopCount !== 0).map((effect) => (
+                    {lightEffects.filter(effect => (effect.customJson as any)?.loopCount !== 0).map((effect) => (
                       <SelectItem key={effect.id} value={effect.id.toString()} className="text-white">
                         {effect.name}
                       </SelectItem>
@@ -791,21 +796,21 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
             </div>
 
             <div>
-              <Label className="text-white">Effect Steps (JSON Array)</Label>
+              <Label className="text-white">Effect JSON</Label>
               <Textarea
                 value={customEffectJson}
                 onChange={(e) => setCustomEffectJson(e.target.value)}
-                placeholder="Enter steps array only..."
+                placeholder="Enter full custom effect JSON..."
                 className="bg-slate-800 border-slate-700 text-white h-32 font-mono text-sm"
               />
               <div className="mt-2 text-xs text-slate-400">
                 <details>
-                  <summary className="cursor-pointer hover:text-slate-300">View steps example</summary>
+                  <summary className="cursor-pointer hover:text-slate-300">View example</summary>
                   <pre className="mt-2 bg-slate-900 p-2 rounded text-xs overflow-x-auto">
-{JSON.stringify(exampleSteps, null, 2)}
+{JSON.stringify(exampleEffect, null, 2)}
                   </pre>
                 </details>
-                <p className="mt-2">Only enter the steps array - the name, description, loop settings will be added automatically from the form fields above.</p>
+                <p className="mt-2">Enter the entire custom effect JSON structure.</p>
               </div>
             </div>
           </TabsContent>
