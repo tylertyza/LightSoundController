@@ -335,6 +335,9 @@ export class LifxUDPService extends EventEmitter {
   }
 
   public triggerEffect(target: string, address: string, effectType: string, duration: number = 1000) {
+    // Save current state before applying effect
+    this.saveDeviceState(target);
+    
     switch (effectType) {
       case 'flash':
         this.flashEffect(target, address, duration);
@@ -352,6 +355,11 @@ export class LifxUDPService extends EventEmitter {
         this.cycleEffect(target, address, duration);
         break;
     }
+    
+    // Restore state after effect completes
+    setTimeout(() => {
+      this.restoreDeviceState(target, address);
+    }, duration + 500);
   }
 
   private flashEffect(target: string, address: string, duration: number) {
@@ -422,6 +430,51 @@ export class LifxUDPService extends EventEmitter {
 
   // Store active effects to allow stopping them
   private activeEffects: Map<string, NodeJS.Timeout[]> = new Map();
+  
+  // Store device states before applying effects so we can restore them
+  private savedDeviceStates: Map<string, ColorHSBK & { power: boolean }> = new Map();
+
+  // Save device state before applying effects
+  private saveDeviceState(target: string) {
+    const device = this.discoveredDevices.get(target);
+    if (device) {
+      const state = {
+        hue: device.color?.hue || 0,
+        saturation: device.color?.saturation || 0,
+        brightness: device.color?.brightness || Math.round((device.brightness || 100) / 100 * 65535),
+        kelvin: device.color?.kelvin || device.temperature || 3500,
+        power: device.power || false
+      };
+      this.savedDeviceStates.set(target, state);
+      console.log(`Saved state for device ${target}:`, state);
+    }
+  }
+
+  // Restore device state after stopping effects
+  private restoreDeviceState(target: string, address: string) {
+    const savedState = this.savedDeviceStates.get(target);
+    if (savedState) {
+      console.log(`Restoring state for device ${target}:`, savedState);
+      
+      // Restore power state
+      if (savedState.power !== undefined) {
+        this.setPower(target, address, savedState.power);
+      }
+      
+      // Restore color/brightness with a small delay to ensure power command is processed
+      setTimeout(() => {
+        this.setColor(target, address, {
+          hue: savedState.hue,
+          saturation: savedState.saturation,
+          brightness: savedState.brightness,
+          kelvin: savedState.kelvin
+        }, 500); // 500ms transition back to original state
+      }, 100);
+      
+      // Clean up saved state
+      this.savedDeviceStates.delete(target);
+    }
+  }
 
   // New method to handle complex JSON effects
   public applyCustomEffect(target: string, address: string, effectData: any, loopCount: number = 1) {
@@ -431,7 +484,10 @@ export class LifxUDPService extends EventEmitter {
     }
 
     // Stop any existing effect for this device
-    this.stopEffect(target);
+    this.stopEffect(target, address);
+
+    // Save current device state before applying effect
+    this.saveDeviceState(target);
 
     let currentLoop = 0;
     const maxLoops = loopCount || 1;
@@ -461,6 +517,12 @@ export class LifxUDPService extends EventEmitter {
           executeSteps();
         }, currentTime);
         timeouts.push(loopTimeout);
+      } else if (!effectData.loop || (!isInfiniteLoop && currentLoop >= maxLoops - 1)) {
+        // Effect finished, restore state after completion
+        const restoreTimeout = setTimeout(() => {
+          this.restoreDeviceState(target, address);
+        }, currentTime + 500); // Small delay after effect completes
+        timeouts.push(restoreTimeout);
       }
     };
     
@@ -470,12 +532,17 @@ export class LifxUDPService extends EventEmitter {
   }
 
   // Method to stop an active effect
-  public stopEffect(target: string) {
+  public stopEffect(target: string, address?: string) {
     const timeouts = this.activeEffects.get(target);
     if (timeouts) {
       timeouts.forEach(timeout => clearTimeout(timeout));
       this.activeEffects.delete(target);
       console.log(`Stopped effect for device: ${target}`);
+      
+      // Restore previous state if we have address
+      if (address) {
+        this.restoreDeviceState(target, address);
+      }
     }
   }
 

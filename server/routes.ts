@@ -699,7 +699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Stop effects on all target devices
       for (const device of targetDevices) {
-        lifxService.stopEffect(device.mac);
+        lifxService.stopEffect(device.mac, device.ip);
       }
 
       broadcast({ type: 'light_effect_stopped', payload: { effectId, devices: targetDevices.map(d => d.id) } });
