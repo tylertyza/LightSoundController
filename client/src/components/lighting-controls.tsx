@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Device, Scene } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,8 +16,10 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const [brightness, setBrightness] = useState(80);
   const [temperature, setTemperature] = useState(3500);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<number[]>([]);
+  const [pendingPowerChanges, setPendingPowerChanges] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const powerTimeoutRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
   
   const adoptedDevices = devices.filter(d => d.isAdopted && d.isOnline);
   const selectedDevices = adoptedDevices.filter(d => selectedDeviceIds.includes(d.id));
@@ -56,19 +58,37 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   
   const powerMutation = useMutation({
     mutationFn: async ({ deviceId, power }: { deviceId: number; power: boolean }) => {
+      // Optimistically update the UI immediately
+      queryClient.setQueryData(['/api/devices'], (oldData: Device[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(device => 
+          device.id === deviceId ? { ...device, power } : device
+        );
+      });
+      
       const response = await apiRequest("POST", `/api/devices/${deviceId}/power`, { power });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Remove from pending changes
+      setPendingPowerChanges(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.deviceId);
+        return newSet;
+      });
       // Refresh devices after successful power change
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
-      toast({
-        title: "Success",
-        description: "Device power updated successfully",
-      });
     },
-    onError: (error) => {
+    onError: (error, variables) => {
       console.error('Power toggle failed:', error);
+      // Remove from pending changes
+      setPendingPowerChanges(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.deviceId);
+        return newSet;
+      });
+      // Revert the optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
       toast({
         title: "Error",
         description: "Failed to toggle device power",
@@ -249,10 +269,25 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                     <div className="flex items-center space-x-1">
                       <button
                         onClick={() => {
-                          console.log(`Turning ON device ${device.id} (${device.label})`);
-                          powerMutation.mutate({ deviceId: device.id, power: true });
+                          // Clear any existing timeout for this device
+                          const existingTimeout = powerTimeoutRef.current.get(device.id);
+                          if (existingTimeout) {
+                            clearTimeout(existingTimeout);
+                          }
+                          
+                          // Add to pending changes
+                          setPendingPowerChanges(prev => new Set(prev).add(device.id));
+                          
+                          // Debounce the power change
+                          const timeout = setTimeout(() => {
+                            console.log(`Turning ON device ${device.id} (${device.label})`);
+                            powerMutation.mutate({ deviceId: device.id, power: true });
+                            powerTimeoutRef.current.delete(device.id);
+                          }, 100);
+                          
+                          powerTimeoutRef.current.set(device.id, timeout);
                         }}
-                        disabled={powerMutation.isPending || device.power}
+                        disabled={pendingPowerChanges.has(device.id) || device.power}
                         className={`text-xs px-2 py-1 rounded text-white disabled:opacity-50 ${
                           device.power 
                             ? 'bg-emerald-600 cursor-not-allowed' 
@@ -264,10 +299,25 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                       </button>
                       <button
                         onClick={() => {
-                          console.log(`Turning OFF device ${device.id} (${device.label})`);
-                          powerMutation.mutate({ deviceId: device.id, power: false });
+                          // Clear any existing timeout for this device
+                          const existingTimeout = powerTimeoutRef.current.get(device.id);
+                          if (existingTimeout) {
+                            clearTimeout(existingTimeout);
+                          }
+                          
+                          // Add to pending changes
+                          setPendingPowerChanges(prev => new Set(prev).add(device.id));
+                          
+                          // Debounce the power change
+                          const timeout = setTimeout(() => {
+                            console.log(`Turning OFF device ${device.id} (${device.label})`);
+                            powerMutation.mutate({ deviceId: device.id, power: false });
+                            powerTimeoutRef.current.delete(device.id);
+                          }, 100);
+                          
+                          powerTimeoutRef.current.set(device.id, timeout);
                         }}
-                        disabled={powerMutation.isPending || !device.power}
+                        disabled={pendingPowerChanges.has(device.id) || !device.power}
                         className={`text-xs px-2 py-1 rounded text-white disabled:opacity-50 ${
                           !device.power 
                             ? 'bg-slate-600 cursor-not-allowed' 

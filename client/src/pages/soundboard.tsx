@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DeviceManagement from "@/components/device-management";
 import LightingControls from "@/components/lighting-controls";
 import LightingEffects from "@/components/lighting-effects";
@@ -23,6 +23,7 @@ export default function Soundboard() {
   
   const { socket, sendMessage } = useWebSocket();
   const { playSound, setMasterVolume } = useAudio();
+  const queryClient = useQueryClient();
   
   const { data: devices = [], refetch: refetchDevices } = useQuery({
     queryKey: ['/api/devices'],
@@ -60,6 +61,9 @@ export default function Soundboard() {
         switch (message.type) {
           case 'device_discovered':
           case 'device_status':
+          case 'device_state_update':
+          case 'device_power_update':
+            // Update the local state immediately
             setConnectedDevices(prev => {
               const existing = prev.find(d => d.id === message.payload.id);
               if (existing) {
@@ -67,8 +71,13 @@ export default function Soundboard() {
               }
               return [...prev, message.payload];
             });
-            // Force refetch to ensure UI is synchronized
-            refetchDevices();
+            // Also update the query cache for immediate UI updates
+            queryClient.setQueryData(['/api/devices'], (oldData: Device[] | undefined) => {
+              if (!oldData) return oldData;
+              return oldData.map(device => 
+                device.id === message.payload.id ? message.payload : device
+              );
+            });
             break;
           case 'sound_played':
             // Handle sound played feedback
@@ -87,7 +96,7 @@ export default function Soundboard() {
     
     socket.addEventListener('message', handleMessage);
     return () => socket.removeEventListener('message', handleMessage);
-  }, [socket, refetchDevices]);
+  }, [socket, refetchDevices, queryClient]);
   
   const handleSoundButtonClick = async (button: SoundButton) => {
     try {
