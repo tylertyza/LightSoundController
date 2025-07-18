@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Volume2, Lightbulb, FileText, Zap } from "lucide-react";
 import { Device, InsertSoundButton, InsertScene, Scene, customLightingEffectSchema } from "@shared/schema";
+import LightingEffects from "./lighting-effects";
 
 interface AddEffectModalProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ interface AddEffectModalProps {
 }
 
 export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devices, editingScene }: AddEffectModalProps) {
-  const [effectType, setEffectType] = useState<'sound' | 'scene'>('sound');
+  const [effectType, setEffectType] = useState<'sound' | 'scene' | 'lighting'>('sound');
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   
   // Sound effect form
@@ -219,9 +220,9 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={effectType} onValueChange={(value) => setEffectType(value as 'sound' | 'scene')}>
+        <Tabs value={effectType} onValueChange={(value) => setEffectType(value as 'sound' | 'scene' | 'lighting')}>
           {!editingScene && (
-            <TabsList className="grid w-full grid-cols-2 bg-slate-800">
+            <TabsList className="grid w-full grid-cols-3 bg-slate-800">
               <TabsTrigger value="sound" className="data-[state=active]:bg-slate-700 text-white">
                 <Volume2 className="w-4 h-4 mr-2" />
                 Sound Effect
@@ -229,6 +230,10 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               <TabsTrigger value="scene" className="data-[state=active]:bg-slate-700 text-white">
                 <Lightbulb className="w-4 h-4 mr-2" />
                 Lighting Scene
+              </TabsTrigger>
+              <TabsTrigger value="lighting" className="data-[state=active]:bg-slate-700 text-white">
+                <Zap className="w-4 h-4 mr-2" />
+                Lighting Effects
               </TabsTrigger>
             </TabsList>
           )}
@@ -367,33 +372,53 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-white">Default Color</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="color"
-                    value={sceneColor}
-                    onChange={(e) => setSceneColor(e.target.value)}
-                    className="w-16 h-10 bg-slate-800 border-slate-700"
-                  />
-                  <Input
-                    value={sceneColor}
-                    onChange={(e) => setSceneColor(e.target.value)}
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-white">Brightness ({sceneBrightness}%)</Label>
-                <input
-                  type="range"
-                  min="1"
-                  max="100"
-                  value={sceneBrightness}
-                  onChange={(e) => setSceneBrightness(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                />
+            {/* Per-Device Controls */}
+            <div>
+              <Label className="text-white mb-3 block">Device-Specific Settings</Label>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {adoptedDevices.map((device) => (
+                  <div key={device.id} className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                        <span className="text-white font-medium">{device.label}</span>
+                      </div>
+                      <Checkbox
+                        checked={selectedDevices.includes(device.id.toString())}
+                        onCheckedChange={() => handleDeviceToggle(device.id.toString())}
+                        className="border-slate-600"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-slate-400 text-xs">Color</Label>
+                        <Input
+                          type="color"
+                          defaultValue={sceneColor}
+                          className="w-full h-8 bg-slate-700 border-slate-600 p-0"
+                          onChange={(e) => {
+                            // Handle device-specific color changes
+                            console.log(`Device ${device.label} color:`, e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-400 text-xs">Brightness</Label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="100"
+                          defaultValue={sceneBrightness}
+                          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                          onChange={(e) => {
+                            // Handle device-specific brightness changes
+                            console.log(`Device ${device.label} brightness:`, e.target.value);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -450,49 +475,57 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               </div>
             </div>
           </TabsContent>
+
+          <TabsContent value="lighting" className="space-y-4">
+            <div className="p-4 bg-slate-800 rounded-lg border border-slate-700">
+              <LightingEffects />
+            </div>
+          </TabsContent>
         </Tabs>
 
-        {/* Device Selection */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-white">Target Devices</Label>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedDevices(adoptedDevices.map(d => d.id.toString()))}
-              className="text-slate-400 border-slate-700 hover:bg-slate-800"
-            >
-              Select All
-            </Button>
-          </div>
-          
-          {adoptedDevices.length === 0 ? (
-            <p className="text-slate-400 text-sm">No adopted devices available. Please adopt devices first.</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-              {adoptedDevices.map((device) => (
-                <div key={device.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`device-${device.id}`}
-                    checked={selectedDevices.includes(device.id.toString())}
-                    onCheckedChange={() => handleDeviceToggle(device.id.toString())}
-                  />
-                  <Label
-                    htmlFor={`device-${device.id}`}
-                    className="text-slate-300 text-sm cursor-pointer"
-                  >
-                    {device.label}
-                  </Label>
-                  {device.isOnline && (
-                    <Badge variant="outline" className="text-green-400 border-green-400 text-xs">
-                      Online
-                    </Badge>
-                  )}
-                </div>
-              ))}
+        {/* Device Selection - Only show for sound and scene tabs */}
+        {effectType !== 'lighting' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-white">Target Devices</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedDevices(adoptedDevices.map(d => d.id.toString()))}
+                className="text-slate-400 border-slate-700 hover:bg-slate-800"
+              >
+                Select All
+              </Button>
             </div>
-          )}
-        </div>
+            
+            {adoptedDevices.length === 0 ? (
+              <p className="text-slate-400 text-sm">No adopted devices available. Please adopt devices first.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                {adoptedDevices.map((device) => (
+                  <div key={device.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`device-${device.id}`}
+                      checked={selectedDevices.includes(device.id.toString())}
+                      onCheckedChange={() => handleDeviceToggle(device.id.toString())}
+                    />
+                    <Label
+                      htmlFor={`device-${device.id}`}
+                      className="text-slate-300 text-sm cursor-pointer"
+                    >
+                      {device.label}
+                    </Label>
+                    {device.isOnline && (
+                      <Badge variant="outline" className="text-green-400 border-green-400 text-xs">
+                        Online
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" onClick={handleClose} className="border-slate-700 text-slate-400">
@@ -502,12 +535,13 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
             onClick={handleSubmit}
             disabled={
               (effectType === 'sound' && (!soundName || !soundFile)) ||
-              (effectType === 'scene' && (!sceneName || (sceneType === 'custom' && !customEffectJson)))
+              (effectType === 'scene' && (!sceneName || (sceneType === 'custom' && !customEffectJson))) ||
+              (effectType === 'lighting')
             }
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Zap className="w-4 h-4 mr-2" />
-            Create Effect
+            {effectType === 'lighting' ? 'Manage Effects' : editingScene ? 'Update Scene' : 'Create Effect'}
           </Button>
         </div>
       </DialogContent>

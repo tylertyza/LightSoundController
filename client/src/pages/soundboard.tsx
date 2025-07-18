@@ -8,6 +8,7 @@ import { AddEffectModal } from "@/components/add-effect-modal";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAudio } from "@/hooks/use-audio";
 import { Device, SoundButton, Scene, WebSocketMessage } from "@shared/schema";
+import { Zap } from "lucide-react";
 
 export default function Soundboard() {
   const [isAddEffectModalOpen, setIsAddEffectModalOpen] = useState(false);
@@ -326,9 +327,19 @@ export default function Soundboard() {
           </div>
         </div>
         
-        {/* Lighting Controls Panel */}
+        {/* Lighting Effects Panel */}
         <div className={`transition-all duration-300 ${isLightingPanelOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
-          <LightingControls devices={connectedDevices} />
+          <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
+            <div className="p-4 border-b border-slate-700">
+              <h2 className="text-lg font-semibold text-white flex items-center">
+                <Zap className="w-5 h-5 mr-2" />
+                Lighting Effects
+              </h2>
+            </div>
+            <div className="flex-1 p-4 overflow-y-auto">
+              <LightingEffects />
+            </div>
+          </div>
         </div>
       </div>
       

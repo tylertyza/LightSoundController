@@ -242,10 +242,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
         </div>
       </div>
       
-      {/* Lighting Effects */}
-      <div className="p-4 border-b border-slate-700">
-        <LightingEffects />
-      </div>
+
       
 
     </div>

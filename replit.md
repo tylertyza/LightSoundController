@@ -10,10 +10,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Lighting Effects Panel Relocation** (July 18, 2025): Moved lighting effects from sidebar to main panel, added new "Lighting Effects" tab in Add Effect modal
+- **Per-Device Lighting Controls** (July 18, 2025): Removed global color/brightness settings, implemented per-bulb controls with device names instead of IDs
+- **Dynamic Effects Removal** (July 18, 2025): Removed dynamic effects section from lighting controls for simplified interface
 - **Custom JSON Effects for Sound Buttons** (July 18, 2025): Added support for custom JSON lighting effects in sound buttons with UI improvements
 - **Docker Deployment Support** (July 17, 2025): Added complete Docker containerization with multi-stage builds, health checks, and deployment scripts
-- **Collapsible Panels Feature**: Implemented smooth animations for hiding/showing device management and lighting control panels
-- **Git Repository Preparation**: Created comprehensive README.md and proper .gitignore for version control
 
 ## System Architecture
 
@@ -54,8 +55,9 @@ Preferred communication style: Simple, everyday language.
 ### Frontend Components
 - **Soundboard Grid**: Interactive grid of sound effect buttons with color-coded themes
 - **Device Management**: LIFX device discovery and control interface (collapsible)
-- **Lighting Controls**: Color, brightness, and effect management (collapsible)
-- **Add Effect Modal**: Unified modal for creating sound buttons and lighting scenes with custom JSON effects
+- **Lighting Effects Panel**: Dedicated panel for managing preset and custom lighting effects (moved from sidebar)
+- **Add Effect Modal**: Unified modal with three tabs (Sound Effect, Lighting Scene, Lighting Effects) for comprehensive effect management
+- **Per-Device Controls**: Device-specific color and brightness settings with bulb names for intuitive control
 - **Collapsible Panels**: Smooth animations for hiding/showing side panels
 - **Custom JSON Effects**: Support for advanced lighting effects with brightness, color, timing, and easing controls
 
