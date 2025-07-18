@@ -75,14 +75,42 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
       setSceneIcon(editingScene.icon);
       setSelectedDevices(editingScene.targetDevices || []);
       
-      // Parse scene configuration
-      const config = editingScene.configuration;
-      if (config) {
-        setSceneColor(config.color || '#ffffff');
-        setSceneBrightness(config.brightness || 80);
-        setSceneFadeIn(config.fadeIn || 1000);
-        setSceneFadeOut(config.fadeOut || 1000);
+      // All scenes now show as custom with JSON data
+      setSceneType('custom');
+      
+      // Convert scene to JSON format for editing
+      let jsonData = (editingScene as any).customJson;
+      if (!jsonData) {
+        // Convert legacy scene to JSON format
+        const config = editingScene.configuration;
+        jsonData = {
+          name: editingScene.name,
+          description: editingScene.description || '',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: [
+            { 
+              deviceIds: [], 
+              settings: { 
+                brightness: config?.brightness || 80, 
+                temperature: config?.temperature || 3500,
+                power: true 
+              }, 
+              delay: 1000 
+            }
+          ]
+        };
       }
+      
+      // Extract just the steps array for the JSON editor
+      const stepsArray = jsonData.steps || [];
+      setCustomEffectJson(JSON.stringify(stepsArray, null, 2));
+      
+      // Set form fields from JSON data
+      setCustomEffectLoop(jsonData.loop || false);
+      setCustomEffectLoopCount(jsonData.loopCount || 1);
+      setCustomEffectGlobalDelay(jsonData.globalDelay || 0);
       
       // Load device-specific settings
       const savedDeviceSettings = (editingScene as any).deviceSettings || {};
@@ -105,6 +133,52 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
       setTurnOnIfOff(true);
     }
   }, [editingScene]);
+
+  // Handle editing lighting effect
+  useEffect(() => {
+    if (editingLightingEffect) {
+      setEffectType('lighting');
+      setSceneName(editingLightingEffect.name);
+      setSceneDescription(editingLightingEffect.description || '');
+      setSceneIcon(editingLightingEffect.icon || 'zap');
+      
+      // All effects now show as custom with JSON data
+      setSceneType('custom');
+      
+      // Convert effect to JSON format for editing
+      let jsonData = editingLightingEffect.customJson;
+      if (!jsonData) {
+        // Convert legacy effect to JSON format
+        jsonData = {
+          name: editingLightingEffect.name,
+          description: editingLightingEffect.description || '',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: [
+            { 
+              deviceIds: [], 
+              settings: { 
+                brightness: 100, 
+                power: true 
+              }, 
+              delay: editingLightingEffect.duration || 1000 
+            }
+          ]
+        };
+      }
+      
+      // Extract just the steps array for the JSON editor
+      const stepsArray = jsonData.steps || [];
+      setCustomEffectJson(JSON.stringify(stepsArray, null, 2));
+      
+      // Set form fields from JSON data
+      setCustomEffectLoop(jsonData.loop || false);
+      setCustomEffectLoopCount(jsonData.loopCount || 1);
+      setCustomEffectGlobalDelay(jsonData.globalDelay || 0);
+      setHiddenFromDashboard(editingLightingEffect.hiddenFromDashboard || false);
+    }
+  }, [editingLightingEffect]);
 
   const adoptedDevices = devices.filter(device => device.isAdopted);
 
@@ -224,9 +298,22 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
     handleClose();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (editingScene && onDeleteScene) {
-      onDeleteScene(editingScene.id);
+      await onDeleteScene(editingScene.id);
+    } else if (editingLightingEffect) {
+      // Delete lighting effect
+      try {
+        const response = await fetch(`/api/light-effects/${editingLightingEffect.id}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          // Refresh the page to update the effects list
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error('Error deleting lighting effect:', error);
+      }
     }
     handleClose();
   };

@@ -257,6 +257,28 @@ export default function Soundboard() {
     }
   };
 
+  const handleSceneUpdate = async (sceneData: any) => {
+    if (editingScene) {
+      try {
+        const response = await fetch(`/api/scenes/${editingScene.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(sceneData),
+        });
+
+        if (response.ok) {
+          refetchScenes();
+          setIsAddEffectModalOpen(false);
+          setEditingScene(null);
+        }
+      } catch (error) {
+        console.error('Error updating scene:', error);
+      }
+    }
+  };
+
   const handleSceneEdit = (scene: Scene) => {
     setEditingScene(scene);
     setIsEditSceneModalOpen(true);
@@ -309,27 +331,7 @@ export default function Soundboard() {
     }
   };
 
-  const handleSceneUpdate = async (sceneData: any) => {
-    if (!editingScene) return;
 
-    try {
-      const response = await fetch(`/api/scenes/${editingScene.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sceneData),
-      });
-
-      if (response.ok) {
-        refetchScenes();
-        setIsEditSceneModalOpen(false);
-        setEditingScene(null);
-      }
-    } catch (error) {
-      console.error('Error updating scene:', error);
-    }
-  };
   
   const onlineDevices = connectedDevices.filter(d => d.isOnline);
   
@@ -434,7 +436,7 @@ export default function Soundboard() {
         isOpen={isAddEffectModalOpen}
         onClose={handleModalClose}
         onSaveSound={handleSoundSave}
-        onSaveScene={editingLightingEffect ? handleLightingEffectSave : handleSceneSave}
+        onSaveScene={editingLightingEffect ? handleLightingEffectSave : (editingScene ? handleSceneUpdate : handleSceneSave)}
         devices={connectedDevices}
         lightEffects={lightingEffects}
         editingLightingEffect={editingLightingEffect}

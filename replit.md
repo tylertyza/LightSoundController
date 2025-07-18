@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Editable Default Effects and Scenes** (July 18, 2025): All default effects and scenes now have JSON format and can be edited/deleted like custom ones. Edit modal shows JSON data for all effects, providing consistent editing experience across default and custom content
 - **Simplified Sound Effects System** (July 18, 2025): Sound effects now only reference existing lighting effects from the Lighting Effects panel. Added toggle to hide/show lighting effects on the soundboard. This creates better separation of concerns where lighting effects are managed centrally
 - **Sound Effects Volume Control** (July 18, 2025): Added individual volume control for each sound effect with blue progress slider. Removed per-device settings for sound effects as lighting effects are now applied globally
 - **Enhanced Device Selection System** (July 18, 2025): Added checkboxes for adopted devices with visual selection feedback. Multi-device control of brightness, color, and temperature with current value displays

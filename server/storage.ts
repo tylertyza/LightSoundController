@@ -55,20 +55,115 @@ export class MemStorage implements IStorage {
   }
 
   private initializeDefaultData() {
-    // Initialize with default light effects
+    // Initialize with default light effects - now with JSON format for editing
     const defaultEffects: InsertLightEffect[] = [
-      { name: 'Flash', type: 'flash', duration: 500, configuration: { intensity: 100 }, hiddenFromDashboard: false },
-      { name: 'Strobe', type: 'strobe', duration: 2000, configuration: { frequency: 5, intensity: 100 }, hiddenFromDashboard: false },
-      { name: 'Fade', type: 'fade', duration: 1000, configuration: { fadeIn: 500, fadeOut: 500 }, hiddenFromDashboard: false },
-      { name: 'Color Cycle', type: 'cycle', duration: 3000, configuration: { colors: ['#ff0000', '#00ff00', '#0000ff'] }, hiddenFromDashboard: false },
-      { name: 'Breathe', type: 'breathe', duration: 2000, configuration: { minBrightness: 10, maxBrightness: 100 }, hiddenFromDashboard: false },
+      { 
+        name: 'Flash', 
+        type: 'flash', 
+        duration: 500, 
+        configuration: { intensity: 100 }, 
+        customJson: {
+          name: 'Flash',
+          description: 'Quick flash effect',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: [
+            { deviceIds: [], settings: { brightness: 100, power: true }, delay: 0 },
+            { deviceIds: [], settings: { brightness: 0 }, delay: 100 },
+            { deviceIds: [], settings: { brightness: 100 }, delay: 100 }
+          ]
+        },
+        hiddenFromDashboard: false,
+        icon: 'zap'
+      },
+      { 
+        name: 'Strobe', 
+        type: 'strobe', 
+        duration: 2000, 
+        configuration: { frequency: 5, intensity: 100 }, 
+        customJson: {
+          name: 'Strobe',
+          description: 'Strobe light effect',
+          loop: true,
+          loopCount: 5,
+          globalDelay: 200,
+          steps: [
+            { deviceIds: [], settings: { brightness: 100, power: true }, delay: 0 },
+            { deviceIds: [], settings: { brightness: 0 }, delay: 100 },
+            { deviceIds: [], settings: { brightness: 100 }, delay: 100 }
+          ]
+        },
+        hiddenFromDashboard: false,
+        icon: 'zap'
+      },
+      { 
+        name: 'Fade', 
+        type: 'fade', 
+        duration: 1000, 
+        configuration: { fadeIn: 500, fadeOut: 500 }, 
+        customJson: {
+          name: 'Fade',
+          description: 'Smooth fade in/out',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: [
+            { deviceIds: [], settings: { brightness: 0, power: true }, delay: 0 },
+            { deviceIds: [], settings: { brightness: 100 }, delay: 500 },
+            { deviceIds: [], settings: { brightness: 0 }, delay: 500 }
+          ]
+        },
+        hiddenFromDashboard: false,
+        icon: 'adjust'
+      },
+      { 
+        name: 'Color Cycle', 
+        type: 'cycle', 
+        duration: 3000, 
+        configuration: { colors: ['#ff0000', '#00ff00', '#0000ff'] }, 
+        customJson: {
+          name: 'Color Cycle',
+          description: 'Cycle through RGB colors',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: [
+            { deviceIds: [], settings: { color: { hue: 0, saturation: 65535, brightness: 50000 }, power: true }, delay: 1000 },
+            { deviceIds: [], settings: { color: { hue: 21845, saturation: 65535, brightness: 50000 } }, delay: 1000 },
+            { deviceIds: [], settings: { color: { hue: 43690, saturation: 65535, brightness: 50000 } }, delay: 1000 }
+          ]
+        },
+        hiddenFromDashboard: false,
+        icon: 'palette'
+      },
+      { 
+        name: 'Breathe', 
+        type: 'breathe', 
+        duration: 2000, 
+        configuration: { minBrightness: 10, maxBrightness: 100 }, 
+        customJson: {
+          name: 'Breathe',
+          description: 'Breathing brightness effect',
+          loop: true,
+          loopCount: 3,
+          globalDelay: 500,
+          steps: [
+            { deviceIds: [], settings: { brightness: 10, power: true }, delay: 0 },
+            { deviceIds: [], settings: { brightness: 100 }, delay: 1000 },
+            { deviceIds: [], settings: { brightness: 10 }, delay: 1000 }
+          ]
+        },
+        hiddenFromDashboard: false,
+        icon: 'wind'
+      },
     ];
 
     defaultEffects.forEach(effect => {
       this.createLightEffect(effect);
     });
 
-    // Initialize with default scenes
+    // Initialize with default scenes - now with JSON format for editing
     const defaultScenes: InsertScene[] = [
       { 
         name: 'Movie Night', 
@@ -76,7 +171,25 @@ export class MemStorage implements IStorage {
         configuration: { brightness: 20, temperature: 2700 },
         colors: ['#ff8c00', '#ff4500'],
         icon: 'film',
-        targetDevices: [] // Initially no target devices
+        targetDevices: [],
+        customJson: {
+          name: 'Movie Night',
+          description: 'Dim warm lighting',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: [
+            { 
+              deviceIds: [], 
+              settings: { 
+                brightness: 20, 
+                temperature: 2700, 
+                power: true 
+              }, 
+              delay: 1000 
+            }
+          ]
+        }
       },
       { 
         name: 'Focus Mode', 
@@ -84,7 +197,25 @@ export class MemStorage implements IStorage {
         configuration: { brightness: 100, temperature: 6500 },
         colors: ['#87ceeb', '#ffffff'],
         icon: 'brain',
-        targetDevices: []
+        targetDevices: [],
+        customJson: {
+          name: 'Focus Mode',
+          description: 'Bright cool white',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: [
+            { 
+              deviceIds: [], 
+              settings: { 
+                brightness: 100, 
+                temperature: 6500, 
+                power: true 
+              }, 
+              delay: 1000 
+            }
+          ]
+        }
       },
       { 
         name: 'Party Time', 
@@ -92,7 +223,41 @@ export class MemStorage implements IStorage {
         configuration: { brightness: 80, effect: 'cycle' },
         colors: ['#8a2be2', '#ff69b4', '#0000ff'],
         icon: 'glass-cheers',
-        targetDevices: []
+        targetDevices: [],
+        customJson: {
+          name: 'Party Time',
+          description: 'Rainbow colors',
+          loop: true,
+          loopCount: 3,
+          globalDelay: 1000,
+          steps: [
+            { 
+              deviceIds: [], 
+              settings: { 
+                brightness: 80, 
+                color: { hue: 53700, saturation: 65535, brightness: 50000 }, 
+                power: true 
+              }, 
+              delay: 1000 
+            },
+            { 
+              deviceIds: [], 
+              settings: { 
+                brightness: 80, 
+                color: { hue: 54930, saturation: 65535, brightness: 50000 } 
+              }, 
+              delay: 1000 
+            },
+            { 
+              deviceIds: [], 
+              settings: { 
+                brightness: 80, 
+                color: { hue: 43690, saturation: 65535, brightness: 50000 } 
+              }, 
+              delay: 1000 
+            }
+          ]
+        }
       },
       { 
         name: 'Relax', 
@@ -100,7 +265,25 @@ export class MemStorage implements IStorage {
         configuration: { brightness: 40, temperature: 3000 },
         colors: ['#dda0dd', '#6a5acd'],
         icon: 'leaf',
-        targetDevices: []
+        targetDevices: [],
+        customJson: {
+          name: 'Relax',
+          description: 'Soft purple ambiance',
+          loop: false,
+          loopCount: 1,
+          globalDelay: 0,
+          steps: [
+            { 
+              deviceIds: [], 
+              settings: { 
+                brightness: 40, 
+                temperature: 3000, 
+                power: true 
+              }, 
+              delay: 1500 
+            }
+          ]
+        }
       },
     ];
 
