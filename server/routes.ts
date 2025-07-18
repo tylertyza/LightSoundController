@@ -642,9 +642,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No adopted devices available' });
       }
 
-      // Apply the effect to all adopted devices
-      for (const device of targetDevices) {
-        lifxService.triggerEffect(device.mac, device.ip, effect.type, effect.duration);
+      // Apply custom JSON effect if available
+      if (effect.customJson) {
+        await applyCustomEffect(effect.customJson, targetDevices);
+      } else {
+        // Apply basic effect type
+        for (const device of targetDevices) {
+          lifxService.triggerEffect(device.mac, device.ip, effect.type, effect.duration);
+        }
       }
 
       broadcast({ type: 'light_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id) } });
@@ -654,6 +659,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to apply light effect' });
     }
   });
+
+  app.put('/api/light-effects/:id', async (req, res) => {
+    try {
+      const effectId = parseInt(req.params.id);
+      const effectData = insertLightEffectSchema.parse(req.body);
+      const effect = await storage.updateLightEffect(effectId, effectData);
+      
+      if (!effect) {
+        return res.status(404).json({ error: 'Light effect not found' });
+      }
+      
+      res.json(effect);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Invalid light effect data', details: error.errors });
+      } else {
+        res.status(500).json({ error: 'Failed to update light effect' });
+      }
+    }
+  });
+
+  app.delete('/api/light-effects/:id', async (req, res) => {
+    try {
+      const effectId = parseInt(req.params.id);
+      const success = await storage.deleteLightEffect(effectId);
+      
+      if (success) {
+        res.json({ message: 'Light effect deleted successfully' });
+      } else {
+        res.status(404).json({ error: 'Light effect not found' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete light effect' });
+    }
+  });
+
+  // Helper function to apply custom JSON effect
+  async function applyCustomEffect(customJson: any, targetDevices: Device[]) {
+    if (!customJson || !customJson.steps) {
+      console.error('Invalid custom JSON format');
+      return;
+    }
+
+    const steps = customJson.steps;
+    const globalDelay = customJson.globalDelay || 0;
+    const loopCount = customJson.loop ? (customJson.loopCount || 1) : 1;
+
+    for (let loop = 0; loop < loopCount; loop++) {
+      for (const step of steps) {
+        const { deviceIds, settings, delay = 0 } = step;
+        
+        // If deviceIds is empty, apply to all target devices
+        const devicesToApply = deviceIds && deviceIds.length > 0 
+          ? targetDevices.filter(d => deviceIds.includes(d.id.toString()))
+          : targetDevices;
+
+        for (const device of devicesToApply) {
+          if (settings) {
+            // Apply settings (brightness, color, temperature, etc.)
+            if (settings.brightness !== undefined) {
+              lifxService.setBrightness(device.mac, device.ip, settings.brightness);
+            }
+            if (settings.color) {
+              lifxService.setColor(device.mac, device.ip, settings.color);
+            }
+            if (settings.temperature !== undefined) {
+              lifxService.setTemperature(device.mac, device.ip, settings.temperature);
+            }
+            if (settings.power !== undefined) {
+              lifxService.setPower(device.mac, device.ip, settings.power);
+            }
+          }
+        }
+
+        // Wait for step delay
+        if (delay > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      // Wait for global delay between loops
+      if (globalDelay > 0 && loop < loopCount - 1) {
+        await new Promise(resolve => setTimeout(resolve, globalDelay));
+      }
+    }
+  }
 
   return httpServer;
 }

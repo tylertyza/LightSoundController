@@ -11,11 +11,12 @@ interface SoundboardGridProps {
   onSceneClick: (scene: Scene) => void;
   onLightingEffectClick: (effect: LightEffect) => void;
   onSceneEdit?: (scene: Scene) => void;
+  onLightingEffectEdit?: (effect: LightEffect) => void;
 }
 
 type GridItem = (SoundButton & { type: 'sound' }) | (Scene & { type: 'scene' }) | (LightEffect & { type: 'lighting' });
 
-export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, onSoundButtonClick, onSceneClick, onLightingEffectClick, onSceneEdit }: SoundboardGridProps) {
+export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, onSoundButtonClick, onSceneClick, onLightingEffectClick, onSceneEdit, onLightingEffectEdit }: SoundboardGridProps) {
   const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
   const [persistentActiveItems, setPersistentActiveItems] = useState<Set<string>>(new Set());
   const [progressItems, setProgressItems] = useState<Map<string, number>>(new Map());
@@ -292,6 +293,20 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
                     onClick={(e) => {
                       e.stopPropagation();
                       onSceneEdit(item);
+                    }}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 w-6 h-6"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                )}
+                
+                {item.type === 'lighting' && onLightingEffectEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onLightingEffectEdit(item);
                     }}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 w-6 h-6"
                   >

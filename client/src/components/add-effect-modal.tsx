@@ -27,10 +27,11 @@ interface AddEffectModalProps {
   onDeleteScene?: (id: number) => void;
   devices: Device[];
   editingScene?: Scene | null;
+  editingLightingEffect?: LightEffect | null;
   lightEffects: LightEffect[];
 }
 
-export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDeleteScene, devices, editingScene, lightEffects }: AddEffectModalProps) {
+export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDeleteScene, devices, editingScene, editingLightingEffect, lightEffects }: AddEffectModalProps) {
   const [effectType, setEffectType] = useState<'sound' | 'scene' | 'lighting'>('sound');
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   
@@ -193,17 +194,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         hiddenFromDashboard: hiddenFromDashboard
       };
       
-      // Save as lighting effect
-      fetch('/api/light-effects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(lightingEffect),
-      }).then(() => {
-        // Refresh the lighting effects list
-        window.location.reload();
-      });
+      // Use the onSaveScene callback to handle both create and update
+      onSaveScene(lightingEffect);
       
     } else {
       if (!sceneName) return;
@@ -709,7 +701,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
           <Button variant="outline" onClick={handleClose} className="border-slate-700 text-slate-400">
             Cancel
           </Button>
-          {editingScene && (
+          {(editingScene || editingLightingEffect) && (
             <Button
               variant="destructive"
               onClick={handleDelete}
@@ -728,7 +720,9 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Zap className="w-4 h-4 mr-2" />
-            {effectType === 'lighting' ? 'Add Lighting Effect' : editingScene ? 'Update' : 'Create Effect'}
+            {effectType === 'lighting' ? 
+              (editingLightingEffect ? 'Update Lighting Effect' : 'Add Lighting Effect') : 
+              editingScene ? 'Update' : 'Create Effect'}
           </Button>
         </div>
       </DialogContent>

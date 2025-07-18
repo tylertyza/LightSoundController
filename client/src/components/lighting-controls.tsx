@@ -144,15 +144,37 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     
     if (selectedDeviceIds.length === 0) return;
     
-    // Convert hex to HSL for LIFX
-    const hue = 0; // Simplified for demo
-    const saturation = 65535;
+    // Convert hex to HSB for LIFX
+    const colorWithoutHash = color.replace('#', '');
+    const r = parseInt(colorWithoutHash.substr(0, 2), 16) / 255;
+    const g = parseInt(colorWithoutHash.substr(2, 2), 16) / 255;
+    const b = parseInt(colorWithoutHash.substr(4, 2), 16) / 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const diff = max - min;
+    
+    let hue = 0;
+    if (diff !== 0) {
+      if (max === r) hue = ((g - b) / diff) % 6;
+      else if (max === g) hue = (b - r) / diff + 2;
+      else hue = (r - g) / diff + 4;
+    }
+    hue = Math.round(hue * 60);
+    if (hue < 0) hue += 360;
+    
+    const saturation = max === 0 ? 0 : diff / max;
     const brightnessValue = Math.round((brightness / 100) * 65535);
     
     selectedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
-        color: { hue, saturation, brightness: brightnessValue, kelvin: temperature }
+        color: { 
+          hue: Math.round(hue / 360 * 65535), 
+          saturation: Math.round(saturation * 65535), 
+          brightness: brightnessValue, 
+          kelvin: temperature 
+        }
       });
     });
   };
@@ -167,7 +189,12 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     selectedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
-        color: { hue: 0, saturation: 0, brightness: brightnessValue, kelvin: temperature }
+        color: { 
+          hue: device.color?.hue || 0, 
+          saturation: device.color?.saturation || 0, 
+          brightness: brightnessValue, 
+          kelvin: temperature 
+        }
       });
     });
   };
@@ -182,7 +209,12 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     selectedDevices.forEach(device => {
       colorMutation.mutate({
         deviceId: device.id,
-        color: { hue: 0, saturation: 0, brightness: brightnessValue, kelvin: newTemperature }
+        color: { 
+          hue: device.color?.hue || 0, 
+          saturation: device.color?.saturation || 0, 
+          brightness: brightnessValue, 
+          kelvin: newTemperature 
+        }
       });
     });
   };

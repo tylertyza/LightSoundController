@@ -7,13 +7,14 @@ import SoundboardGrid from "@/components/soundboard-grid";
 import { AddEffectModal } from "@/components/add-effect-modal";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { useAudio } from "@/hooks/use-audio";
-import { Device, SoundButton, Scene, WebSocketMessage } from "@shared/schema";
+import { Device, SoundButton, Scene, WebSocketMessage, LightEffect } from "@shared/schema";
 import { Zap } from "lucide-react";
 
 export default function Soundboard() {
   const [isAddEffectModalOpen, setIsAddEffectModalOpen] = useState(false);
   const [isEditSceneModalOpen, setIsEditSceneModalOpen] = useState(false);
   const [editingScene, setEditingScene] = useState<Scene | null>(null);
+  const [editingLightingEffect, setEditingLightingEffect] = useState<LightEffect | null>(null);
   const [globalVolume, setGlobalVolume] = useState(0.8);
   const [connectedDevices, setConnectedDevices] = useState<Device[]>([]);
   const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(true);
@@ -168,6 +169,48 @@ export default function Soundboard() {
   
   const handleModalClose = () => {
     setIsAddEffectModalOpen(false);
+    setEditingLightingEffect(null);
+  };
+
+  const handleLightingEffectSave = async (effectData: any) => {
+    if (editingLightingEffect) {
+      // Update existing lighting effect
+      try {
+        const response = await fetch(`/api/light-effects/${editingLightingEffect.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(effectData),
+        });
+
+        if (response.ok) {
+          refetchLightingEffects();
+          setIsAddEffectModalOpen(false);
+          setEditingLightingEffect(null);
+        }
+      } catch (error) {
+        console.error('Error updating lighting effect:', error);
+      }
+    } else {
+      // Create new lighting effect
+      try {
+        const response = await fetch('/api/light-effects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(effectData),
+        });
+
+        if (response.ok) {
+          refetchLightingEffects();
+          setIsAddEffectModalOpen(false);
+        }
+      } catch (error) {
+        console.error('Error creating lighting effect:', error);
+      }
+    }
   };
   
   const handleSoundSave = async (soundData: any) => {
@@ -217,6 +260,11 @@ export default function Soundboard() {
   const handleSceneEdit = (scene: Scene) => {
     setEditingScene(scene);
     setIsEditSceneModalOpen(true);
+  };
+
+  const handleLightingEffectEdit = (effect: LightEffect) => {
+    setEditingLightingEffect(effect);
+    setIsAddEffectModalOpen(true);
   };
 
   const handleSceneDelete = async (sceneId: number) => {
@@ -369,6 +417,7 @@ export default function Soundboard() {
                 onSceneClick={handleSceneClick}
                 onSceneEdit={handleSceneEdit}
                 onLightingEffectClick={handleLightingEffectClick}
+                onLightingEffectEdit={handleLightingEffectEdit}
               />
             </div>
           </div>
@@ -385,9 +434,10 @@ export default function Soundboard() {
         isOpen={isAddEffectModalOpen}
         onClose={handleModalClose}
         onSaveSound={handleSoundSave}
-        onSaveScene={handleSceneSave}
+        onSaveScene={editingLightingEffect ? handleLightingEffectSave : handleSceneSave}
         devices={connectedDevices}
         lightEffects={lightingEffects}
+        editingLightingEffect={editingLightingEffect}
       />
 
       {/* Edit Scene Modal */}
