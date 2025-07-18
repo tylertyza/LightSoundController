@@ -424,8 +424,8 @@ export default function Soundboard() {
             </button>
             <i className="fas fa-lightbulb text-blue-400 text-xl md:text-2xl"></i>
             <h1 className="text-lg md:text-xl font-bold text-white truncate">
-              <span className="hidden sm:inline">LIFX Sound & Light Control</span>
-              <span className="sm:hidden">LIFX Control</span>
+              <span className="hidden sm:inline">LIFX Soundboard</span>
+              <span className="sm:hidden">LIFX Soundboard</span>
             </h1>
           </div>
           <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
@@ -489,7 +489,7 @@ export default function Soundboard() {
           <div className="flex-1 p-3 md:p-6 overflow-y-auto pb-24 md:pb-6">
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <h2 className="text-xl md:text-2xl font-bold text-white">Creative Studio</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-white">LIFX Soundboard</h2>
                 <div className="flex items-center space-x-2 md:space-x-3">
                   <button
                     onClick={handleAddEffect}
