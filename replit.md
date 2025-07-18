@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Mobile Bottom Navigation** (July 18, 2025): Added fixed bottom navigation pill for mobile with device and lighting panel switches. Desktop keeps arrow icons in header. Mobile navigation is more visible and accessible with blue active state indicators and proper touch targets
 - **Mobile Interface Bug Fixes** (July 18, 2025): Fixed mobile panel issues with improved scrolling, less sensitive dismissal behavior, and replaced confusing arrow icons with relevant panel icons (router for device management, palette for lighting controls). Enhanced touch handling with proper pan-y behavior for better mobile experience
 - **Lighting Effects Improvements** (July 18, 2025): Fixed exact duration progress bars based on steps, fade times, and loops. Added device state saving and restoration after effects finish. Fixed mobile single-tap activation for lighting effects. Improved device status updates to include power state. Removed infinite loop effects from sound creation dropdown
 - **Modal Tab Text Color Fix** (July 18, 2025): Fixed black text on active tabs in modal by adding explicit white text color override for active tab states

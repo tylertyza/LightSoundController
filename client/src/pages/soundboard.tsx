@@ -417,10 +417,10 @@ export default function Soundboard() {
           <div className="flex items-center space-x-2 md:space-x-3 min-w-0">
             <button
               onClick={() => setIsDevicePanelOpen(!isDevicePanelOpen)}
-              className="text-slate-400 hover:text-white transition-colors p-1 touch-manipulation"
+              className="hidden md:block text-slate-400 hover:text-white transition-colors p-1 touch-manipulation"
               title="Toggle Device Panel"
             >
-              <i className={`fas fa-${isDevicePanelOpen ? 'cogs' : 'router'} text-lg`}></i>
+              <i className={`fas fa-${isDevicePanelOpen ? 'angle-left' : 'angle-right'} text-lg`}></i>
             </button>
             <i className="fas fa-lightbulb text-blue-400 text-xl md:text-2xl"></i>
             <h1 className="text-lg md:text-xl font-bold text-white truncate">
@@ -441,10 +441,10 @@ export default function Soundboard() {
             </div>
             <button
               onClick={() => setIsLightingPanelOpen(!isLightingPanelOpen)}
-              className="text-slate-400 hover:text-white transition-colors p-1 touch-manipulation"
+              className="hidden md:block text-slate-400 hover:text-white transition-colors p-1 touch-manipulation"
               title="Toggle Lighting Panel"
             >
-              <i className={`fas fa-${isLightingPanelOpen ? 'palette' : 'lightbulb'} text-lg`}></i>
+              <i className={`fas fa-${isLightingPanelOpen ? 'angle-right' : 'angle-left'} text-lg`}></i>
             </button>
           </div>
         </div>
@@ -486,7 +486,7 @@ export default function Soundboard() {
         
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 p-3 md:p-6 overflow-y-auto">
+          <div className="flex-1 p-3 md:p-6 overflow-y-auto pb-20 md:pb-6">
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                 <h2 className="text-xl md:text-2xl font-bold text-white">Sound & Light Board</h2>
@@ -573,6 +573,42 @@ export default function Soundboard() {
         editingScene={editingScene}
         lightEffects={lightingEffects}
       />
+      
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-800 border-t border-slate-700 p-3">
+        <div className="flex items-center justify-center">
+          <div className="bg-slate-700 rounded-full p-1 flex items-center space-x-1">
+            <button
+              onClick={() => {
+                setIsDevicePanelOpen(true);
+                setIsLightingPanelOpen(false);
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors touch-manipulation ${
+                isDevicePanelOpen 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <i className="fas fa-router mr-2"></i>
+              Devices
+            </button>
+            <button
+              onClick={() => {
+                setIsLightingPanelOpen(true);
+                setIsDevicePanelOpen(false);
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors touch-manipulation ${
+                isLightingPanelOpen 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <i className="fas fa-palette mr-2"></i>
+              Lighting
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
