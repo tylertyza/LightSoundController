@@ -32,7 +32,7 @@ export const soundButtons = pgTable("sound_buttons", {
   color: text("color").notNull(),
   icon: text("icon").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
-  targetDevices: text("target_devices").array(), // Array of device IDs that this sound button will control
+  volume: integer("volume").notNull().default(80), // Volume level (0-100)
   customJson: jsonb("custom_json"), // For custom JSON lighting effects
 });
 

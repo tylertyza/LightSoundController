@@ -90,7 +90,7 @@ export default function Soundboard() {
   
   const handleSoundButtonClick = async (button: SoundButton) => {
     try {
-      await playSound(`/api/audio/${button.audioFile}`);
+      await playSound(`/api/audio/${button.audioFile}`, button.volume || 80);
       
       // Trigger lighting effect if custom JSON is available
       if (button.lightEffect === 'custom' && (button as any).customJson) {

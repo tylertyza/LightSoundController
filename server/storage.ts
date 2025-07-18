@@ -188,7 +188,7 @@ export class MemStorage implements IStorage {
       id, 
       sortOrder,
       description: insertButton.description || null,
-      targetDevices: insertButton.targetDevices || [],
+      volume: insertButton.volume || 80,
       customJson: insertButton.customJson || null
     };
     this.soundButtons.set(id, button);

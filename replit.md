@@ -10,6 +10,9 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Sound Effects Volume Control** (July 18, 2025): Added individual volume control for each sound effect with blue progress slider. Removed per-device settings for sound effects as lighting effects are now applied globally
+- **Enhanced Device Selection System** (July 18, 2025): Added checkboxes for adopted devices with visual selection feedback. Multi-device control of brightness, color, and temperature with current value displays
+- **Improved Slider Visual Feedback** (July 18, 2025): Enhanced slider styling with blue progress indicators that follow the dot position for better visual feedback
 - **Soundboard Grid Redesign** (July 18, 2025): Separated effects into sections with Sound Effects, Lighting Scenes, and Lighting Effects. Added horizontal layout for lighting effects and progress bars for timed effects
 - **Persistent Active States** (July 18, 2025): Added visual indicators for active scenes and looping effects with blue ring outline
 - **Effect Overwrite System** (July 18, 2025): When selecting different effects, previous selections are automatically overwritten
@@ -46,7 +49,7 @@ Preferred communication style: Simple, everyday language.
 ### Database Schema (Drizzle ORM)
 - **Users**: Basic user authentication system
 - **Devices**: LIFX device management with IP, MAC, and status tracking
-- **Sound Buttons**: Configurable sound effects with associated lighting behaviors and custom JSON effects support
+- **Sound Buttons**: Configurable sound effects with volume control, associated lighting behaviors, and custom JSON effects support
 - **Scenes**: Predefined lighting configurations with custom JSON effects support
 - **Light Effects**: Reusable lighting effect templates
 
@@ -57,11 +60,13 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Components
 - **Soundboard Grid**: Sectioned grid with separate areas for Sound Effects, Lighting Scenes, and Lighting Effects with horizontal layout for lighting effects
-- **Device Management**: LIFX device discovery and control interface (collapsible)
+- **Device Management**: LIFX device discovery and control interface (collapsible) with checkbox-based selection system
 - **Progress Indicators**: Real-time progress bars for timed effects showing duration completion
 - **Persistent Active States**: Visual ring indicators for active scenes and looping effects with automatic overwrite system
-- **Add Effect Modal**: Unified modal with three tabs for comprehensive effect management, restricted looping effects in sound creation
-- **Per-Device Controls**: Device-specific color and brightness settings with bulb names for intuitive control
+- **Add Effect Modal**: Unified modal with three tabs for comprehensive effect management, volume control for sound effects, restricted looping effects in sound creation
+- **Device Selection System**: Multi-device selection with checkboxes, visual feedback, and collective control of brightness, color, and temperature
+- **Enhanced Sliders**: Blue progress indicators that follow slider position with current value displays
+- **Volume Control**: Individual volume settings for each sound effect with visual feedback
 - **Collapsible Panels**: Smooth animations for hiding/showing side panels
 - **Custom JSON Effects**: Support for advanced lighting effects with brightness, color, timing, and easing controls
 

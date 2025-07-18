@@ -14,7 +14,7 @@ export function useAudio() {
     }
   }, []);
   
-  const playSound = useCallback(async (audioUrl: string) => {
+  const playSound = useCallback(async (audioUrl: string, volume: number = 80) => {
     try {
       initializeAudioContext();
       
@@ -33,7 +33,13 @@ export function useAudio() {
       
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(masterGainRef.current);
+      
+      // Create individual gain node for this sound's volume
+      const soundGainNode = audioContextRef.current.createGain();
+      soundGainNode.gain.value = Math.max(0, Math.min(1, volume / 100)); // Convert percentage to 0-1 range
+      
+      source.connect(soundGainNode);
+      soundGainNode.connect(masterGainRef.current);
       source.start();
       
       return new Promise<void>((resolve) => {

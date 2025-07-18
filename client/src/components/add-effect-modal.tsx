@@ -40,6 +40,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
   const [soundColor, setSoundColor] = useState('#3b82f6');
   const [soundIcon, setSoundIcon] = useState('volume-2');
   const [soundLightEffect, setSoundLightEffect] = useState('flash');
+  const [soundVolume, setSoundVolume] = useState(80);
   
   // Scene effect form
   const [sceneName, setSceneName] = useState('');
@@ -161,7 +162,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         lightEffect: lightEffect,
         color: soundColor,
         icon: soundIcon,
-        targetDevices: selectedDevices,
+        volume: soundVolume,
         customJson,
       });
     } else if (effectType === 'lighting') {
@@ -255,6 +256,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
     setSoundColor('#3b82f6');
     setSoundIcon('volume-2');
     setSoundLightEffect('flash');
+    setSoundVolume(80);
     setSceneName('');
     setSceneDescription('');
     setSceneIcon('lightbulb');
@@ -383,19 +385,39 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
               />
             </div>
 
-            <div>
-              <Label className="text-white">Lighting Effect</Label>
-              <Select value={soundLightEffect} onValueChange={setSoundLightEffect}>
-                <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                  <SelectValue placeholder="Select a lighting effect" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
-                  <SelectItem value="flash" className="text-white">Flash</SelectItem>
-                  <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
-                  <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
-                  <SelectItem value="fade" className="text-white">Fade</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-white">Lighting Effect</Label>
+                <Select value={soundLightEffect} onValueChange={setSoundLightEffect}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                    <SelectValue placeholder="Select a lighting effect" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectItem value="flash" className="text-white">Flash</SelectItem>
+                    <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
+                    <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
+                    <SelectItem value="fade" className="text-white">Fade</SelectItem>
+                    <SelectItem value="custom" className="text-white">Custom JSON</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-white">Volume</Label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={soundVolume}
+                    onChange={(e) => setSoundVolume(parseInt(e.target.value))}
+                    className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${soundVolume}%, #374151 ${soundVolume}%, #374151 100%)`
+                    }}
+                  />
+                  <span className="text-white text-sm font-medium min-w-[3ch]">{soundVolume}%</span>
+                </div>
+              </div>
             </div>
 
 
@@ -677,47 +699,27 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
           </TabsContent>
         </Tabs>
 
-        {/* Device Selection - Only show for sound tabs */}
-        {effectType === 'sound' && (
+        {/* Custom JSON for sound effects */}
+        {effectType === 'sound' && soundLightEffect === 'custom' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-white">Target Devices</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedDevices(adoptedDevices.map(d => d.id.toString()))}
-                className="text-slate-400 border-slate-700 hover:bg-slate-800"
-              >
-                Select All
-              </Button>
-            </div>
-            
-            {adoptedDevices.length === 0 ? (
-              <p className="text-slate-400 text-sm">No adopted devices available. Please adopt devices first.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                {adoptedDevices.map((device) => (
-                  <div key={device.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`device-${device.id}`}
-                      checked={selectedDevices.includes(device.id.toString())}
-                      onCheckedChange={() => handleDeviceToggle(device.id.toString())}
-                    />
-                    <Label
-                      htmlFor={`device-${device.id}`}
-                      className="text-slate-300 text-sm cursor-pointer"
-                    >
-                      {device.label}
-                    </Label>
-                    {device.isOnline && (
-                      <Badge variant="outline" className="text-green-400 border-green-400 text-xs">
-                        Online
-                      </Badge>
-                    )}
-                  </div>
-                ))}
+            <div>
+              <Label className="text-white">Custom JSON Lighting Effect</Label>
+              <Textarea
+                value={customEffectJson}
+                onChange={(e) => setCustomEffectJson(e.target.value)}
+                placeholder="Enter custom JSON lighting effect..."
+                className="bg-slate-800 border-slate-700 text-white h-32 font-mono text-sm"
+              />
+              <div className="mt-2 text-xs text-slate-400">
+                <details>
+                  <summary className="cursor-pointer hover:text-slate-300">View example JSON</summary>
+                  <pre className="mt-2 bg-slate-900 p-2 rounded text-xs overflow-x-auto">
+{JSON.stringify(exampleSteps, null, 2)}
+                  </pre>
+                </details>
+                <p className="mt-2">The effect will be applied to all adopted devices automatically.</p>
               </div>
-            )}
+            </div>
           </div>
         )}
 
