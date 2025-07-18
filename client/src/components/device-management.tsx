@@ -13,9 +13,9 @@ const getDeviceStatusColor = (device: Device) => {
   }
   
   // If device uses temperature/kelvin (white light)
-  if (device.color?.kelvin && device.color.kelvin > 0) {
+  if ((device.color as any)?.kelvin && (device.color as any).kelvin > 0) {
     // Convert kelvin to RGB-ish color
-    const kelvin = device.color.kelvin;
+    const kelvin = (device.color as any).kelvin;
     let r, g, b;
     
     if (kelvin <= 2000) {
@@ -40,10 +40,10 @@ const getDeviceStatusColor = (device: Device) => {
   }
   
   // If device uses color (HSV/HSB)
-  if (device.color?.hue !== undefined && device.color?.saturation !== undefined) {
-    const hue = (device.color.hue / 65535) * 360;
-    const saturation = device.color.saturation / 65535;
-    const brightness = ((device.color.brightness || device.brightness || 100) / 65535) * 100;
+  if ((device.color as any)?.hue !== undefined && (device.color as any)?.saturation !== undefined) {
+    const hue = ((device.color as any).hue / 65535) * 360;
+    const saturation = (device.color as any).saturation / 65535;
+    const brightness = (((device.color as any).brightness || device.brightness || 100) / 65535) * 100;
     
     // Convert HSV to RGB
     const c = (brightness / 100) * saturation;
