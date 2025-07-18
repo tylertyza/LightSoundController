@@ -586,6 +586,10 @@ export class LifxUDPService extends EventEmitter {
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     const runSteps = async () => {
+      const globalDelay = effectData.globalDelay || 0;
+      if (globalDelay > 0) {
+        await delay(globalDelay);
+      }
       while (!cancelToken.cancelled && (isInfiniteLoop || currentLoop < maxLoops)) {
         for (let i = 0; i < effectData.steps.length; i++) {
           if (cancelToken.cancelled) {
@@ -609,6 +613,10 @@ export class LifxUDPService extends EventEmitter {
           const duration = step.duration || 1000;
           this.setColor(mac, ip, color, duration);
           await delay(duration);
+          const stepDelay = step.delay || 0;
+          if (stepDelay > 0) {
+            await delay(stepDelay);
+          }
         }
         currentLoop++;
       }
