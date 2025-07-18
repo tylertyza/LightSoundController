@@ -156,8 +156,8 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
       <div className="p-3 md:p-4 border-b border-slate-700">
         <div className="flex items-center justify-between">
           <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
-            <i className="fas fa-router mr-2"></i>
-            Device Management
+            <i className="fas fa-cogs mr-2"></i>
+            Device Lab
           </h2>
           {/* Close button for mobile */}
           <button

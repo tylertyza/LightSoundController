@@ -601,6 +601,9 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
                           value={deviceSettings[device.id]?.brightness || sceneBrightness}
                           className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
                           onChange={(e) => handleDeviceBrightnessChange(device.id.toString(), parseInt(e.target.value))}
+                          style={{
+                            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${deviceSettings[device.id]?.brightness || sceneBrightness}%, #374151 ${deviceSettings[device.id]?.brightness || sceneBrightness}%, #374151 100%)`
+                          }}
                         />
                       </div>
                     </div>

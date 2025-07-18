@@ -274,8 +274,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
            style={{ touchAction: 'pan-y' }}>
         <div className="flex items-center justify-between">
           <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
-            <i className="fas fa-palette mr-2"></i>
-            Lighting Controls
+            <i className="fas fa-magic mr-2"></i>
+            Light Studio
           </h2>
           {/* Close button for mobile */}
           <button

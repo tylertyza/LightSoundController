@@ -489,7 +489,7 @@ export default function Soundboard() {
           <div className="flex-1 p-3 md:p-6 overflow-y-auto pb-24 md:pb-6">
             <div className="mb-4 md:mb-6">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <h2 className="text-xl md:text-2xl font-bold text-white">Sound & Light Board</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-white">Creative Studio</h2>
                 <div className="flex items-center space-x-2 md:space-x-3">
                   <button
                     onClick={handleAddEffect}
@@ -604,7 +604,7 @@ export default function Soundboard() {
               }`}
             >
               <i className="fas fa-music mr-1"></i>
-              Sound Stage
+              Creative Studio
             </button>
             <button
               onClick={() => {
