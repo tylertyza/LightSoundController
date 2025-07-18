@@ -45,6 +45,8 @@ export const scenes = pgTable("scenes", {
   icon: text("icon").notNull().default("lightbulb"),
   targetDevices: text("target_devices").array(), // Array of device IDs that this scene will control
   customJson: jsonb("custom_json"), // For custom JSON lighting effects
+  turnOnIfOff: boolean("turn_on_if_off").notNull().default(true),
+  deviceSettings: jsonb("device_settings"), // Per-device color and brightness settings
 });
 
 export const lightEffects = pgTable("light_effects", {

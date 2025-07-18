@@ -526,39 +526,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : onlineDevices.filter(d => d.isAdopted);
       
       const config = scene.configuration as any;
+      const deviceSettings = (scene as any).deviceSettings || {};
       
       // Check if this is a custom JSON effect
       if (config.type === 'custom' && (scene as any).customJson) {
         await applyCustomEffect((scene as any).customJson, targetDevices);
       } else {
-        // Apply preset scene configuration
-        targetDevices.forEach(device => {
-          if (config.brightness !== undefined) {
-            lifxService.setBrightness(device.mac, device.ip, config.brightness);
+        // Apply scene configuration with device-specific settings
+        for (const device of targetDevices) {
+          const deviceId = device.id.toString();
+          const specificSettings = deviceSettings[deviceId];
+          
+          // Turn on device if needed
+          if ((scene as any).turnOnIfOff && !device.power) {
+            lifxService.setPower(device.mac, device.ip, true);
           }
-          if (config.temperature !== undefined) {
+          
+          // Use device-specific settings if available, otherwise use scene defaults
+          const brightness = specificSettings?.brightness || config.brightness || 100;
+          const color = specificSettings?.color || config.color;
+          const temperature = config.temperature || 3500;
+          
+          if (brightness !== undefined) {
+            lifxService.setBrightness(device.mac, device.ip, brightness);
+          }
+          
+          if (color) {
+            const colorHsb = hexToHsb(color);
+            lifxService.setColor(device.mac, device.ip, {
+              hue: colorHsb.hue,
+              saturation: colorHsb.saturation,
+              brightness: Math.round(brightness / 100 * 65535),
+              kelvin: temperature
+            });
+          }
+          
+          if (temperature !== undefined && !color) {
             lifxService.setColor(device.mac, device.ip, {
               hue: 0,
               saturation: 0,
-              brightness: Math.round((config.brightness || 100) / 100 * 65535),
-              kelvin: config.temperature
+              brightness: Math.round(brightness / 100 * 65535),
+              kelvin: temperature
             });
           }
-          if (config.color) {
-            const color = hexToHsb(config.color);
-            lifxService.setColor(device.mac, device.ip, {
-              hue: color.hue,
-              saturation: color.saturation,
-              brightness: Math.round((config.brightness || 100) / 100 * 65535),
-              kelvin: config.temperature || 3500
-            });
-          }
-        });
+          
+          // Update device state in storage
+          await storage.updateDevice(device.id, {
+            power: true,
+            brightness: brightness,
+            color: color ? hexToHsb(color) : null,
+            temperature: temperature
+          });
+        }
       }
       
       broadcast({ type: 'scene_applied', payload: { sceneId, devices: targetDevices.map(d => d.id) } });
       res.json({ message: 'Scene applied successfully' });
     } catch (error) {
+      console.error('Error applying scene:', error);
       res.status(500).json({ error: 'Failed to apply scene' });
     }
   });
