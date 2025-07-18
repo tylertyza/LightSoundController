@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **Mobile Panel Animation & Scene Background Fixes** (July 18, 2025): Added smooth sliding animations for mobile panels with proper easing curves. Fixed default scene background gradients to show appropriate colors based on scene names and configurations. Improved mobile panel transition timing and backdrop fade effects
+- **Mobile Panel Animation & Default State** (July 18, 2025): Fixed mobile panel animations with proper transform transitions and easing curves. Set default state to have panels closed on mobile for better UX. Enhanced panel positioning to ensure smooth slide-in/slide-out animations on mobile devices
 - **Mobile Interface Bug Fixes** (July 18, 2025): Fixed mobile navigation issues with close buttons on all panels, proper backdrop click handling, and resolved lighting effects getting stuck in loops. Added proper termination logic for infinite lighting effects and improved mobile touch interactions
 - **Mobile-Responsive Interface** (July 18, 2025): Completely redesigned interface for mobile devices with overlay panels instead of fixed sidebars, responsive grid layouts, larger touch targets, and mobile-optimized input controls. Added proper touch manipulation, viewport optimization, and mobile-specific CSS styles
 - **Device Status Indicators and Power Controls** (July 18, 2025): Added status circles to adopted devices showing current color and brightness state. Black when off, color-accurate when on with brightness dimming. Added power toggle buttons in lighting controls for selected devices

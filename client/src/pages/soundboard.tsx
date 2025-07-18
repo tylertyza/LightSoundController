@@ -17,8 +17,8 @@ export default function Soundboard() {
   const [editingLightingEffect, setEditingLightingEffect] = useState<LightEffect | null>(null);
   const [globalVolume, setGlobalVolume] = useState(0.8);
   const [connectedDevices, setConnectedDevices] = useState<Device[]>([]);
-  const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(true);
-  const [isLightingPanelOpen, setIsLightingPanelOpen] = useState(true);
+  const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(false);
+  const [isLightingPanelOpen, setIsLightingPanelOpen] = useState(false);
   const [availableLightingEffects, setAvailableLightingEffects] = useState<any[]>([]);
 
   
@@ -395,7 +395,7 @@ export default function Soundboard() {
         <div className={`
           z-20
           md:relative md:block md:w-80 md:transition-all md:duration-300 md:ease-in-out
-          ${isDevicePanelOpen ? 'fixed inset-0 md:relative' : 'hidden md:w-0'}
+          ${isDevicePanelOpen ? 'md:relative' : 'md:w-0'}
         `}>
           {/* Mobile backdrop */}
           {isDevicePanelOpen && (
@@ -404,11 +404,13 @@ export default function Soundboard() {
               onClick={() => setIsDevicePanelOpen(false)}
             />
           )}
-          <div className={`
-            relative z-20 h-full
-            mobile-panel md:translate-x-0 md:transition-none
-            ${isDevicePanelOpen ? 'open' : 'closed'}
-          `}>
+          <div 
+            className={`
+              fixed inset-0 z-20 h-full transition-transform duration-300 ease-in-out
+              md:relative md:translate-x-0
+              ${isDevicePanelOpen ? 'translate-x-0' : '-translate-x-full'}
+            `}
+          >
             <DeviceManagement
               devices={connectedDevices}
               onDiscoverDevices={handleDeviceDiscovery}
@@ -452,7 +454,7 @@ export default function Soundboard() {
         <div className={`
           z-20
           md:relative md:block md:w-80 md:transition-all md:duration-300 md:ease-in-out
-          ${isLightingPanelOpen ? 'fixed inset-0 md:relative' : 'hidden md:w-0'}
+          ${isLightingPanelOpen ? 'md:relative' : 'md:w-0'}
         `}>
           {/* Mobile backdrop */}
           {isLightingPanelOpen && (
@@ -461,11 +463,13 @@ export default function Soundboard() {
               onClick={() => setIsLightingPanelOpen(false)}
             />
           )}
-          <div className={`
-            relative z-20 h-full
-            mobile-panel-right md:translate-x-0 md:transition-none
-            ${isLightingPanelOpen ? 'open' : 'closed'}
-          `}>
+          <div 
+            className={`
+              fixed inset-0 z-20 h-full transition-transform duration-300 ease-in-out
+              md:relative md:translate-x-0
+              ${isLightingPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+            `}
+          >
             <LightingControls devices={connectedDevices} />
           </div>
         </div>
