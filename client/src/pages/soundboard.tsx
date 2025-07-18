@@ -11,6 +11,8 @@ import { Device, SoundButton, Scene, WebSocketMessage } from "@shared/schema";
 
 export default function Soundboard() {
   const [isAddEffectModalOpen, setIsAddEffectModalOpen] = useState(false);
+  const [isEditSceneModalOpen, setIsEditSceneModalOpen] = useState(false);
+  const [editingScene, setEditingScene] = useState<Scene | null>(null);
   const [globalVolume, setGlobalVolume] = useState(0.8);
   const [connectedDevices, setConnectedDevices] = useState<Device[]>([]);
   const [isDevicePanelOpen, setIsDevicePanelOpen] = useState(true);
@@ -28,7 +30,7 @@ export default function Soundboard() {
     queryKey: ['/api/sound-buttons'],
   });
   
-  const { data: scenes = [] } = useQuery({
+  const { data: scenes = [], refetch: refetchScenes } = useQuery({
     queryKey: ['/api/scenes'],
   });
   
@@ -200,12 +202,38 @@ export default function Soundboard() {
       });
 
       if (response.ok) {
-        // Refresh scenes data
-        window.location.reload(); // Simple refresh for now
+        refetchScenes();
         setIsAddEffectModalOpen(false);
       }
     } catch (error) {
       console.error('Error saving scene:', error);
+    }
+  };
+
+  const handleSceneEdit = (scene: Scene) => {
+    setEditingScene(scene);
+    setIsEditSceneModalOpen(true);
+  };
+
+  const handleSceneUpdate = async (sceneData: any) => {
+    if (!editingScene) return;
+
+    try {
+      const response = await fetch(`/api/scenes/${editingScene.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sceneData),
+      });
+
+      if (response.ok) {
+        refetchScenes();
+        setIsEditSceneModalOpen(false);
+        setEditingScene(null);
+      }
+    } catch (error) {
+      console.error('Error updating scene:', error);
     }
   };
   
@@ -292,6 +320,7 @@ export default function Soundboard() {
                 scenes={scenes}
                 onSoundButtonClick={handleSoundButtonClick}
                 onSceneClick={handleSceneClick}
+                onSceneEdit={handleSceneEdit}
               />
             </div>
           </div>
@@ -310,6 +339,19 @@ export default function Soundboard() {
         onSaveSound={handleSoundSave}
         onSaveScene={handleSceneSave}
         devices={connectedDevices}
+      />
+
+      {/* Edit Scene Modal */}
+      <AddEffectModal
+        isOpen={isEditSceneModalOpen}
+        onClose={() => {
+          setIsEditSceneModalOpen(false);
+          setEditingScene(null);
+        }}
+        onSaveSound={handleSoundSave}
+        onSaveScene={handleSceneUpdate}
+        devices={connectedDevices}
+        editingScene={editingScene}
       />
     </div>
   );

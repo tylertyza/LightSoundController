@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Volume2, Lightbulb, FileText, Zap } from "lucide-react";
-import { Device, InsertSoundButton, InsertScene, customLightingEffectSchema } from "@shared/schema";
+import { Device, InsertSoundButton, InsertScene, Scene, customLightingEffectSchema } from "@shared/schema";
 
 interface AddEffectModalProps {
   isOpen: boolean;
@@ -24,9 +24,10 @@ interface AddEffectModalProps {
   onSaveSound: (data: InsertSoundButton & { audioFile: File }) => void;
   onSaveScene: (data: InsertScene) => void;
   devices: Device[];
+  editingScene?: Scene | null;
 }
 
-export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devices }: AddEffectModalProps) {
+export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devices, editingScene }: AddEffectModalProps) {
   const [effectType, setEffectType] = useState<'sound' | 'scene'>('sound');
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   
@@ -51,6 +52,26 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
   const [sceneTemperature, setSceneTemperature] = useState(3500);
   const [sceneFadeIn, setSceneFadeIn] = useState(1000);
   const [sceneFadeOut, setSceneFadeOut] = useState(1000);
+
+  // Initialize form with editing scene data
+  useEffect(() => {
+    if (editingScene) {
+      setEffectType('scene');
+      setSceneName(editingScene.name);
+      setSceneDescription(editingScene.description || '');
+      setSceneIcon(editingScene.icon);
+      setSelectedDevices(editingScene.targetDevices || []);
+      
+      // Parse scene configuration
+      const config = editingScene.configuration;
+      if (config) {
+        setSceneColor(config.color || '#ffffff');
+        setSceneBrightness(config.brightness || 80);
+        setSceneFadeIn(config.fadeIn || 1000);
+        setSceneFadeOut(config.fadeOut || 1000);
+      }
+    }
+  }, [editingScene]);
 
   const adoptedDevices = devices.filter(device => device.isAdopted);
 
@@ -190,23 +211,27 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
         <DialogHeader>
-          <DialogTitle className="text-white">Add New Effect</DialogTitle>
+          <DialogTitle className="text-white">
+            {editingScene ? 'Edit Scene' : 'Add New Effect'}
+          </DialogTitle>
           <DialogDescription className="text-slate-400">
-            Create a new sound effect or lighting scene with device targeting
+            {editingScene ? 'Edit the lighting scene' : 'Create a new sound effect or lighting scene with device targeting'}
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={effectType} onValueChange={(value) => setEffectType(value as 'sound' | 'scene')}>
-          <TabsList className="grid w-full grid-cols-2 bg-slate-800">
-            <TabsTrigger value="sound" className="data-[state=active]:bg-slate-700 text-white">
-              <Volume2 className="w-4 h-4 mr-2" />
-              Sound Effect
-            </TabsTrigger>
-            <TabsTrigger value="scene" className="data-[state=active]:bg-slate-700 text-white">
-              <Lightbulb className="w-4 h-4 mr-2" />
-              Lighting Scene
-            </TabsTrigger>
-          </TabsList>
+          {!editingScene && (
+            <TabsList className="grid w-full grid-cols-2 bg-slate-800">
+              <TabsTrigger value="sound" className="data-[state=active]:bg-slate-700 text-white">
+                <Volume2 className="w-4 h-4 mr-2" />
+                Sound Effect
+              </TabsTrigger>
+              <TabsTrigger value="scene" className="data-[state=active]:bg-slate-700 text-white">
+                <Lightbulb className="w-4 h-4 mr-2" />
+                Lighting Scene
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="sound" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

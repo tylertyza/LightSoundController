@@ -101,6 +101,8 @@ const presetEffects: LightingEffect[] = [
 export default function LightingEffects({ onEffectSelect }: LightingEffectsProps) {
   const [customEffects, setCustomEffects] = useState<LightingEffect[]>([]);
   const [isAddEffectOpen, setIsAddEffectOpen] = useState(false);
+  const [isEditEffectOpen, setIsEditEffectOpen] = useState(false);
+  const [editingEffect, setEditingEffect] = useState<LightingEffect | null>(null);
   const [newEffectName, setNewEffectName] = useState("");
   const [newEffectDescription, setNewEffectDescription] = useState("");
   const [newEffectJson, setNewEffectJson] = useState("");
@@ -160,6 +162,51 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
 
   const handleDeleteCustomEffect = (id: string) => {
     setCustomEffects(prev => prev.filter(effect => effect.id !== id));
+  };
+
+  const handleEditEffect = (effect: LightingEffect) => {
+    setEditingEffect(effect);
+    setNewEffectName(effect.name);
+    setNewEffectDescription(effect.description || "");
+    setNewEffectJson(JSON.stringify(effect.json, null, 2));
+    setIsEditEffectOpen(true);
+  };
+
+  const handleSaveEditedEffect = () => {
+    if (!editingEffect || !newEffectName || !newEffectJson) return;
+
+    try {
+      const parsedJson = JSON.parse(newEffectJson);
+      
+      if (editingEffect.isPreset) {
+        // Create a copy of the preset as a custom effect
+        const newCustomEffect: LightingEffect = {
+          id: `custom-${Date.now()}`,
+          name: newEffectName,
+          description: newEffectDescription,
+          isPreset: false,
+          json: parsedJson
+        };
+        setCustomEffects(prev => [...prev, newCustomEffect]);
+      } else {
+        // Update existing custom effect
+        setCustomEffects(prev => 
+          prev.map(effect => 
+            effect.id === editingEffect.id 
+              ? { ...effect, name: newEffectName, description: newEffectDescription, json: parsedJson }
+              : effect
+          )
+        );
+      }
+      
+      setNewEffectName("");
+      setNewEffectDescription("");
+      setNewEffectJson("");
+      setEditingEffect(null);
+      setIsEditEffectOpen(false);
+    } catch (error) {
+      console.error('Invalid JSON:', error);
+    }
   };
 
   return (
@@ -248,6 +295,67 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
             </div>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isEditEffectOpen} onOpenChange={setIsEditEffectOpen}>
+          <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-white">
+                Edit {editingEffect?.isPreset ? 'Preset' : 'Custom'} Effect
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-white">Name</Label>
+                  <Input
+                    value={newEffectName}
+                    onChange={(e) => setNewEffectName(e.target.value)}
+                    className="bg-slate-800 border-slate-700 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-white">Description</Label>
+                  <Input
+                    value={newEffectDescription}
+                    onChange={(e) => setNewEffectDescription(e.target.value)}
+                    className="bg-slate-800 border-slate-700 text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-white">Effect JSON</Label>
+                <Textarea
+                  value={newEffectJson}
+                  onChange={(e) => setNewEffectJson(e.target.value)}
+                  className="bg-slate-800 border-slate-700 text-white font-mono text-sm"
+                  rows={10}
+                />
+              </div>
+              {editingEffect?.isPreset && (
+                <div className="bg-blue-900/20 border border-blue-700 rounded p-3">
+                  <p className="text-blue-300 text-sm">
+                    Note: Editing a preset effect will create a new custom effect with your changes.
+                  </p>
+                </div>
+              )}
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditEffectOpen(false)}
+                  className="border-slate-700 text-white hover:bg-slate-800"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveEditedEffect}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Save {editingEffect?.isPreset ? 'as Custom' : 'Changes'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="h-[400px] w-full rounded-md border border-slate-700 bg-slate-800 p-4 overflow-y-auto">
@@ -269,19 +377,32 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
                       </Badge>
                     )}
                   </div>
-                  {!effect.isPreset && (
+                  <div className="flex items-center space-x-1">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteCustomEffect(effect.id);
+                        handleEditEffect(effect);
                       }}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Edit className="w-3 h-3" />
                     </Button>
-                  )}
+                    {!effect.isPreset && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCustomEffect(effect.id);
+                        }}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               {effect.description && (

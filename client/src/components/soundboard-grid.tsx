@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { SoundButton, Scene } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Edit } from "lucide-react";
 
 interface SoundboardGridProps {
   soundButtons: SoundButton[];
   scenes: Scene[];
   onSoundButtonClick: (button: SoundButton) => void;
   onSceneClick: (scene: Scene) => void;
+  onSceneEdit?: (scene: Scene) => void;
 }
 
 type GridItem = (SoundButton & { type: 'sound' }) | (Scene & { type: 'scene' });
 
-export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClick, onSceneClick }: SoundboardGridProps) {
+export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClick, onSceneClick, onSceneEdit }: SoundboardGridProps) {
   const [activeItems, setActiveItems] = useState<Set<string>>(new Set());
   
   // Combine and sort sound buttons and scenes
@@ -119,10 +122,9 @@ export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClic
         return (
           <div
             key={itemKey}
-            className={getItemStyle(item, isActive)}
-            onClick={() => handleItemClick(item)}
+            className={`${getItemStyle(item, isActive)} relative group`}
           >
-            <div className="text-center">
+            <div className="text-center" onClick={() => handleItemClick(item)}>
               <div className={`w-12 h-12 ${getIconBackgroundStyle(item)} rounded-lg mx-auto mb-3 flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform`}>
                 <i className={`fas fa-${icon}`}></i>
               </div>
@@ -140,6 +142,19 @@ export default function SoundboardGrid({ soundButtons, scenes, onSoundButtonClic
                 <p className="text-xs text-slate-400 mt-1">{item.description}</p>
               )}
             </div>
+            {item.type === 'scene' && onSceneEdit && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800/80 hover:bg-slate-700/80 text-white p-1 h-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSceneEdit(item);
+                }}
+              >
+                <Edit className="w-3 h-3" />
+              </Button>
+            )}
           </div>
         );
       })}

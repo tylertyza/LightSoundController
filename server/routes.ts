@@ -476,6 +476,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.put('/api/scenes/:id', async (req, res) => {
+    try {
+      const sceneId = parseInt(req.params.id);
+      const sceneData = insertSceneSchema.parse(req.body);
+      const scene = await storage.updateScene(sceneId, sceneData);
+      
+      if (!scene) {
+        return res.status(404).json({ error: 'Scene not found' });
+      }
+      
+      res.json(scene);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Invalid scene data', details: error.errors });
+      } else {
+        res.status(500).json({ error: 'Failed to update scene' });
+      }
+    }
+  });
+
   app.post('/api/scenes/:id/apply', async (req, res) => {
     try {
       const sceneId = parseInt(req.params.id);

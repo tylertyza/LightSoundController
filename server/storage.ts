@@ -234,6 +234,15 @@ export class MemStorage implements IStorage {
     return updatedScene;
   }
 
+  async updateScene(id: number, updates: Partial<Scene>): Promise<Scene | undefined> {
+    const scene = this.scenes.get(id);
+    if (!scene) return undefined;
+    
+    const updatedScene = { ...scene, ...updates };
+    this.scenes.set(id, updatedScene);
+    return updatedScene;
+  }
+
   async deleteScene(id: number): Promise<boolean> {
     return this.scenes.delete(id);
   }

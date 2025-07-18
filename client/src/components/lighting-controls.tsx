@@ -117,11 +117,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     sceneApplyMutation.mutate(sceneId);
   };
   
-  const handleEffectToggle = (effectType: string) => {
-    adoptedDevices.forEach(device => {
-      onTriggerEffect(device.id, effectType, 2000);
-    });
-  };
+
   
   return (
     <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
@@ -251,24 +247,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
         <LightingEffects />
       </div>
       
-      {/* Effects */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <h3 className="text-sm font-medium text-slate-300 mb-3">Dynamic Effects</h3>
-        <div className="space-y-2">
-          {['breathing', 'strobe', 'cycle', 'flame'].map((effect) => (
-            <button
-              key={effect}
-              onClick={() => handleEffectToggle(effect)}
-              className="w-full bg-slate-900 hover:bg-slate-700 px-3 py-2 rounded-lg text-left transition-colors border border-slate-600"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-white capitalize">{effect}</span>
-                <i className="fas fa-play text-slate-400"></i>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+
     </div>
   );
 }
