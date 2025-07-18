@@ -203,17 +203,17 @@ export default function LightingControls({ devices }: LightingControlsProps) {
 
   
   return (
-    <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
-      <div className="p-4 border-b border-slate-700">
-        <h2 className="text-lg font-semibold text-white flex items-center">
+    <div className="w-full md:w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
+      <div className="p-3 md:p-4 border-b border-slate-700">
+        <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
           <i className="fas fa-palette mr-2"></i>
           Lighting Controls
         </h2>
       </div>
       
       {/* Adopted Devices */}
-      <div className="p-4 border-b border-slate-700">
-        <div className="flex items-center justify-between mb-3">
+      <div className="p-3 md:p-4 border-b border-slate-700">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-medium text-slate-300">Adopted Devices</h3>
           {adoptedDevices.length > 0 && (
             <div className="flex items-center space-x-2">
@@ -221,15 +221,16 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleSelectAll}
-                className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700"
+                className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700 touch-manipulation"
               >
-                Select All
+                <span className="hidden sm:inline">Select All</span>
+                <span className="sm:hidden">All</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleDeselectAll}
-                className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700"
+                className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700 touch-manipulation"
               >
                 Clear
               </Button>
@@ -274,8 +275,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
 
       
       {/* Color Control */}
-      <div className="p-4 border-b border-slate-700">
-        <div className="flex items-center justify-between mb-3">
+      <div className="p-3 md:p-4 border-b border-slate-700">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-medium text-slate-300">Color & Brightness</h3>
           <div className="text-xs text-slate-400">
             {selectedDeviceIds.length === 0 ? 'Select devices above' : `${selectedDeviceIds.length} device${selectedDeviceIds.length > 1 ? 's' : ''} selected`}
@@ -293,7 +294,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                   size="sm"
                   onClick={() => handlePowerToggle(false)}
                   disabled={powerMutation.isPending}
-                  className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700"
+                  className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700 touch-manipulation"
                 >
                   <i className="fas fa-power-off mr-1"></i>
                   Off
@@ -303,7 +304,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                   size="sm"
                   onClick={() => handlePowerToggle(true)}
                   disabled={powerMutation.isPending}
-                  className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700"
+                  className="text-xs px-2 py-1 h-6 text-slate-400 border-slate-600 hover:bg-slate-700 touch-manipulation"
                 >
                   <i className="fas fa-lightbulb mr-1"></i>
                   On
@@ -321,7 +322,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
             value={selectedColor}
             onChange={(e) => handleColorChange(e.target.value)}
             disabled={selectedDeviceIds.length === 0}
-            className="w-full h-10 bg-slate-900 border border-slate-600 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-10 md:h-12 bg-slate-900 border border-slate-600 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
           />
         </div>
         
@@ -338,7 +339,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
             value={brightness}
             onChange={(e) => handleBrightnessChange(parseInt(e.target.value))}
             disabled={selectedDeviceIds.length === 0}
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-3 md:h-4 bg-slate-700 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             style={{
               background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${brightness}%, #374151 ${brightness}%, #374151 100%)`
             }}
@@ -362,14 +363,16 @@ export default function LightingControls({ devices }: LightingControlsProps) {
             value={temperature}
             onChange={(e) => handleTemperatureChange(parseInt(e.target.value))}
             disabled={selectedDeviceIds.length === 0}
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-3 md:h-4 bg-slate-700 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             style={{
               background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((temperature - 2500) / (9000 - 2500)) * 100}%, #374151 ${((temperature - 2500) / (9000 - 2500)) * 100}%, #374151 100%)`
             }}
           />
           <div className="flex justify-between text-xs text-slate-500 mt-1">
-            <span>Warm (2500K)</span>
-            <span>Cool (9000K)</span>
+            <span className="hidden sm:inline">Warm (2500K)</span>
+            <span className="sm:hidden">Warm</span>
+            <span className="hidden sm:inline">Cool (9000K)</span>
+            <span className="sm:hidden">Cool</span>
           </div>
         </div>
       </div>

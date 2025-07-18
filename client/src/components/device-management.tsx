@@ -152,37 +152,38 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
   };
   
   return (
-    <div className="w-80 bg-slate-800 border-r border-slate-700 flex flex-col h-full">
-      <div className="p-4 border-b border-slate-700">
-        <h2 className="text-lg font-semibold text-white flex items-center">
+    <div className="w-full md:w-80 bg-slate-800 border-r border-slate-700 flex flex-col h-full">
+      <div className="p-3 md:p-4 border-b border-slate-700">
+        <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
           <i className="fas fa-cog mr-2"></i>
           Device Management
         </h2>
       </div>
       
       {/* Device Discovery Section */}
-      <div className="p-4 border-b border-slate-700">
-        <div className="flex items-center justify-between mb-3">
+      <div className="p-3 md:p-4 border-b border-slate-700">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-medium text-slate-300">Discovery</h3>
           <Button
             onClick={handleDiscoverDevices}
             disabled={isDiscovering}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 touch-manipulation"
           >
             <i className={`fas ${isDiscovering ? 'fa-spinner fa-spin' : 'fa-search'} mr-1`}></i>
-            {isDiscovering ? 'Scanning...' : 'Scan Network'}
+            <span className="hidden sm:inline">{isDiscovering ? 'Scanning...' : 'Scan Network'}</span>
+            <span className="sm:hidden">{isDiscovering ? 'Scan...' : 'Scan'}</span>
           </Button>
         </div>
-        <div className="bg-slate-900 rounded-lg p-3">
-          <div className="text-xs text-slate-400 mb-2">UDP Port: 56700</div>
+        <div className="bg-slate-900 rounded-lg p-2 md:p-3">
+          <div className="text-xs text-slate-400 mb-1 md:mb-2">UDP Port: 56700</div>
           <div className="text-xs text-slate-400">Rate Limit: 20 msg/sec</div>
         </div>
       </div>
       
       {/* Device List */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4">
+        <div className="p-3 md:p-4">
           <h3 className="text-sm font-medium text-slate-300 mb-3">Connected Devices</h3>
           
           {devices.length === 0 ? (
@@ -201,33 +202,34 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
                       {/* Status circle showing current light color/brightness */}
                       <div 
                         className="w-4 h-4 rounded-full border border-slate-600 flex-shrink-0"
                         style={{ backgroundColor: getDeviceStatusColor(device) }}
                         title={`${device.power ? 'On' : 'Off'} - ${device.brightness || 100}% brightness`}
                       />
-                      <span className="text-sm font-medium text-white">{device.label}</span>
+                      <span className="text-sm font-medium text-white truncate">{device.label}</span>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-1 flex-shrink-0">
                       <button
                         onClick={() => handleAdoptDevice(device)}
                         disabled={adoptDeviceMutation.isPending}
-                        className={`text-xs px-2 py-1 rounded transition-colors ${
+                        className={`text-xs px-2 py-1 rounded transition-colors touch-manipulation ${
                           device.isAdopted
                             ? 'bg-red-600 hover:bg-red-700 text-white'
                             : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
                       >
                         <i className={`fas ${device.isAdopted ? 'fa-minus' : 'fa-plus'} mr-1`}></i>
-                        {device.isAdopted ? 'Remove' : 'Adopt'}
+                        <span className="hidden sm:inline">{device.isAdopted ? 'Remove' : 'Adopt'}</span>
+                        <span className="sm:hidden">{device.isAdopted ? '-' : '+'}</span>
                       </button>
                       <button
                         onClick={() => handleDeleteDevice(device.id)}
                         disabled={deleteDeviceMutation.isPending}
-                        className="text-slate-400 hover:text-red-400 text-xs"
+                        className="text-slate-400 hover:text-red-400 text-xs p-1 touch-manipulation"
                       >
                         <i className="fas fa-trash"></i>
                       </button>
@@ -241,9 +243,11 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
                     </div>
                   )}
                   <div className="text-xs text-slate-400 space-y-1">
-                    <div>IP: <span className="text-slate-300">{device.ip}</span></div>
-                    <div>MAC: <span className="text-slate-300">{device.mac}</span></div>
-                    <div>Type: <span className="text-slate-300">{device.deviceType}</span></div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <div>IP: <span className="text-slate-300">{device.ip}</span></div>
+                      <div className="hidden sm:block">MAC: <span className="text-slate-300">{device.mac.substring(0, 8)}...</span></div>
+                      <div>Type: <span className="text-slate-300">{device.deviceType}</span></div>
+                    </div>
                     {device.lastSeen && (
                       <div>Last seen: <span className="text-slate-300">{new Date(device.lastSeen).toLocaleTimeString()}</span></div>
                     )}

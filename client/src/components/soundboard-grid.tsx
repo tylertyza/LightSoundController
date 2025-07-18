@@ -90,10 +90,10 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
   
   const getItemStyle = (item: GridItem, isActive: boolean, isPersistent: boolean) => {
     const itemKey = `${item.type}-${item.id}`;
-    const baseStyle = "relative rounded-xl p-4 hover:bg-slate-700 transition-all duration-200 cursor-pointer group border border-slate-700 overflow-hidden";
+    const baseStyle = "relative rounded-xl p-2 md:p-4 hover:bg-slate-700 transition-all duration-200 cursor-pointer group border border-slate-700 overflow-hidden touch-manipulation";
     
     // Different sizing for lighting effects
-    const sizeStyle = item.type === 'lighting' ? "h-20" : "h-32";
+    const sizeStyle = item.type === 'lighting' ? "h-16 md:h-20" : "h-24 md:h-32";
     
     // Background styles
     let backgroundStyle = "bg-slate-800";
@@ -245,9 +245,9 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
     if (items.length === 0) return null;
     
     return (
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-white mb-4">{title}</h2>
-        <div className={gridCols || "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"}>
+      <div className="mb-6 md:mb-8">
+        <h2 className="text-lg md:text-xl font-bold text-white mb-3 md:mb-4">{title}</h2>
+        <div className={gridCols || "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-3 lg:gap-4"}>
           {items.map((item) => {
             const itemKey = `${item.type}-${item.id}`;
             const isActive = activeItems.has(itemKey);
@@ -261,11 +261,11 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
                 onClick={() => handleItemClick(item)}
               >
                 <div className={`flex ${item.type === 'lighting' ? 'flex-row items-center' : 'flex-col items-center justify-center'} h-full text-center`}>
-                  <div className={`${item.type === 'lighting' ? 'w-8 h-8 mr-3' : 'w-10 h-10 mb-2'} rounded-lg flex items-center justify-center ${getIconBackgroundStyle(item)}`}>
-                    <i className={`fas ${getIconComponent(item.icon, item.type)} text-white ${item.type === 'lighting' ? 'text-sm' : 'text-lg'}`}></i>
+                  <div className={`${item.type === 'lighting' ? 'w-6 h-6 md:w-8 md:h-8 mr-2 md:mr-3' : 'w-8 h-8 md:w-10 md:h-10 mb-2'} rounded-lg flex items-center justify-center ${getIconBackgroundStyle(item)}`}>
+                    <i className={`fas ${getIconComponent(item.icon, item.type)} text-white ${item.type === 'lighting' ? 'text-xs md:text-sm' : 'text-sm md:text-lg'}`}></i>
                   </div>
                   <div className={item.type === 'lighting' ? 'flex-1' : ''}>
-                    <h3 className={`text-white font-medium mb-1 group-hover:text-blue-300 transition-colors ${item.type === 'lighting' ? 'text-sm' : 'text-sm'}`}>
+                    <h3 className={`text-white font-medium mb-1 group-hover:text-blue-300 transition-colors ${item.type === 'lighting' ? 'text-xs md:text-sm' : 'text-xs md:text-sm'}`}>
                       {item.name}
                     </h3>
                     {item.description && item.type !== 'lighting' && (
@@ -294,7 +294,7 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
                       e.stopPropagation();
                       onSceneEdit(item);
                     }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 w-6 h-6"
+                    className="absolute top-1 right-1 md:top-2 md:right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 w-6 h-6 touch-manipulation"
                   >
                     <Edit className="w-3 h-3" />
                   </Button>
@@ -308,7 +308,7 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
                       e.stopPropagation();
                       onLightingEffectEdit(item);
                     }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 w-6 h-6"
+                    className="absolute top-1 right-1 md:top-2 md:right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 w-6 h-6 touch-manipulation"
                   >
                     <Edit className="w-3 h-3" />
                   </Button>
@@ -322,10 +322,23 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {renderSection("Sound Effects", soundItems)}
       {renderSection("Lighting Scenes", sceneItems)}
-      {renderSection("Lighting Effects", lightingItems, "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3")}
+      {renderSection("Lighting Effects", lightingItems, "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 md:gap-3")}
+      
+      {/* Empty State */}
+      {soundItems.length === 0 && sceneItems.length === 0 && lightingItems.length === 0 && (
+        <div className="text-center py-8 md:py-16">
+          <div className="text-slate-400 text-base md:text-lg mb-4">
+            <i className="fas fa-music text-4xl md:text-6xl mb-4"></i>
+            <p>No effects available</p>
+          </div>
+          <p className="text-slate-500 text-sm">
+            Click "Add Effect" to create your first sound or lighting effect
+          </p>
+        </div>
+      )}
     </div>
   );
 }

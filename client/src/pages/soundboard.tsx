@@ -338,33 +338,36 @@ export default function Soundboard() {
   return (
     <div className="bg-slate-900 text-white min-h-screen">
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+      <header className="bg-slate-800 border-b border-slate-700 px-3 md:px-6 py-3 md:py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 md:space-x-3 min-w-0">
             <button
               onClick={() => setIsDevicePanelOpen(!isDevicePanelOpen)}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-slate-400 hover:text-white transition-colors p-1 touch-manipulation"
               title="Toggle Device Panel"
             >
               <i className={`fas fa-${isDevicePanelOpen ? 'angle-left' : 'angle-right'} text-lg`}></i>
             </button>
-            <i className="fas fa-lightbulb text-blue-400 text-2xl"></i>
-            <h1 className="text-xl font-bold text-white">LIFX Sound & Light Control</h1>
+            <i className="fas fa-lightbulb text-blue-400 text-xl md:text-2xl"></i>
+            <h1 className="text-lg md:text-xl font-bold text-white truncate">
+              <span className="hidden sm:inline">LIFX Sound & Light Control</span>
+              <span className="sm:hidden">LIFX Control</span>
+            </h1>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
             <div className="flex items-center space-x-2">
               <div className={`w-3 h-3 rounded-full ${socket ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></div>
-              <span className={`text-sm ${socket ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span className={`text-sm ${socket ? 'text-emerald-400' : 'text-red-400'} hidden sm:inline`}>
                 {socket ? 'Connected' : 'Disconnected'}
               </span>
             </div>
-            <div className="text-sm text-slate-400">
+            <div className="text-sm text-slate-400 hidden md:block">
               <i className="fas fa-network-wired mr-1"></i>
               <span>{onlineDevices.length}</span> devices found
             </div>
             <button
               onClick={() => setIsLightingPanelOpen(!isLightingPanelOpen)}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-slate-400 hover:text-white transition-colors p-1 touch-manipulation"
               title="Toggle Lighting Panel"
             >
               <i className={`fas fa-${isLightingPanelOpen ? 'angle-right' : 'angle-left'} text-lg`}></i>
@@ -374,27 +377,42 @@ export default function Soundboard() {
       </header>
       
       <div className="flex h-screen overflow-hidden">
-        {/* Device Management Panel */}
-        <div className={`transition-all duration-300 ${isDevicePanelOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
-          <DeviceManagement
-            devices={connectedDevices}
-            onDiscoverDevices={handleDeviceDiscovery}
-          />
+        {/* Device Management Panel - Mobile: Overlay, Desktop: Sidebar */}
+        <div className={`
+          transition-all duration-300 z-20
+          md:relative md:block
+          ${isDevicePanelOpen ? 'fixed inset-0 md:relative md:w-80' : 'hidden md:w-0'}
+          ${isDevicePanelOpen ? 'md:overflow-hidden' : 'overflow-hidden'}
+        `}>
+          {/* Mobile backdrop */}
+          {isDevicePanelOpen && (
+            <div 
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+              onClick={() => setIsDevicePanelOpen(false)}
+            />
+          )}
+          <div className="relative z-20 h-full">
+            <DeviceManagement
+              devices={connectedDevices}
+              onDiscoverDevices={handleDeviceDiscovery}
+            />
+          </div>
         </div>
         
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 p-6 overflow-y-auto">
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white">Sound & Light Board</h2>
-                <div className="flex items-center space-x-3">
+          <div className="flex-1 p-3 md:p-6 overflow-y-auto">
+            <div className="mb-4 md:mb-6">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h2 className="text-xl md:text-2xl font-bold text-white">Sound & Light Board</h2>
+                <div className="flex items-center space-x-2 md:space-x-3">
                   <button
                     onClick={handleAddEffect}
-                    className="bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors"
+                    className="bg-emerald-600 hover:bg-emerald-700 px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg transition-colors"
                   >
-                    <i className="fas fa-plus mr-2"></i>
-                    Add Effect
+                    <i className="fas fa-plus mr-1 md:mr-2"></i>
+                    <span className="hidden sm:inline">Add Effect</span>
+                    <span className="sm:hidden">Add</span>
                   </button>
                 </div>
               </div>
@@ -413,9 +431,23 @@ export default function Soundboard() {
           </div>
         </div>
         
-        {/* Lighting Controls Panel */}
-        <div className={`transition-all duration-300 ${isLightingPanelOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
-          <LightingControls devices={connectedDevices} />
+        {/* Lighting Controls Panel - Mobile: Overlay, Desktop: Sidebar */}
+        <div className={`
+          transition-all duration-300 z-20
+          md:relative md:block
+          ${isLightingPanelOpen ? 'fixed inset-0 md:relative md:w-80' : 'hidden md:w-0'}
+          ${isLightingPanelOpen ? 'md:overflow-hidden' : 'overflow-hidden'}
+        `}>
+          {/* Mobile backdrop */}
+          {isLightingPanelOpen && (
+            <div 
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+              onClick={() => setIsLightingPanelOpen(false)}
+            />
+          )}
+          <div className="relative z-20 h-full">
+            <LightingControls devices={connectedDevices} />
+          </div>
         </div>
       </div>
       

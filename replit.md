@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Mobile-Responsive Interface** (July 18, 2025): Completely redesigned interface for mobile devices with overlay panels instead of fixed sidebars, responsive grid layouts, larger touch targets, and mobile-optimized input controls. Added proper touch manipulation, viewport optimization, and mobile-specific CSS styles
 - **Device Status Indicators and Power Controls** (July 18, 2025): Added status circles to adopted devices showing current color and brightness state. Black when off, color-accurate when on with brightness dimming. Added power toggle buttons in lighting controls for selected devices
 - **Editable Default Effects and Scenes** (July 18, 2025): All default effects and scenes now have JSON format and can be edited/deleted like custom ones. Edit modal shows JSON data for all effects, providing consistent editing experience across default and custom content
 - **Simplified Sound Effects System** (July 18, 2025): Sound effects now only reference existing lighting effects from the Lighting Effects panel. Added toggle to hide/show lighting effects on the soundboard. This creates better separation of concerns where lighting effects are managed centrally
