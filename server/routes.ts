@@ -117,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const color = hexToHsb(step.color);
         
         // Apply to all target devices
-        targetDevices.forEach(device => {
+        targetDevices.forEach((device: Device) => {
           lifxService.setColor(device.mac, device.ip, {
             hue: color.hue,
             saturation: color.saturation,
@@ -428,11 +428,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/sound-buttons/custom-effect', async (req, res) => {
     try {
       const { customEffect, deviceIds } = req.body;
-      
-      for (const deviceId of deviceIds) {
-        await lifxService.applyCustomEffect(deviceId, customEffect);
-      }
-      
+      const devices = await storage.getOnlineDevices();
+      const targetDevices = devices.filter(d => deviceIds.includes(d.id.toString()));
+      await applyCustomEffect(customEffect, targetDevices);
       res.json({ success: true });
     } catch (error) {
       console.error('Error applying custom effect:', error);

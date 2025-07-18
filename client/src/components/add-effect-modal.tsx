@@ -237,6 +237,10 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onSa
       if (customEffectJson) {
         try {
           customEffect = JSON.parse(customEffectJson);
+          // Support raw arrays by wrapping them in an object
+          if (Array.isArray(customEffect)) {
+            customEffect = { steps: customEffect };
+          }
         } catch (error) {
           console.error('Invalid effect JSON:', error);
           return;
