@@ -393,10 +393,9 @@ export default function Soundboard() {
       <div className="flex h-screen overflow-hidden">
         {/* Device Management Panel - Mobile: Overlay, Desktop: Sidebar */}
         <div className={`
-          transition-all duration-300 ease-in-out z-20
-          md:relative md:block
-          ${isDevicePanelOpen ? 'fixed inset-0 md:relative md:w-80' : 'hidden md:w-0'}
-          ${isDevicePanelOpen ? 'md:overflow-hidden' : 'overflow-hidden'}
+          z-20
+          md:relative md:block md:w-80 md:transition-all md:duration-300 md:ease-in-out
+          ${isDevicePanelOpen ? 'fixed inset-0 md:relative' : 'hidden md:w-0'}
         `}>
           {/* Mobile backdrop */}
           {isDevicePanelOpen && (
@@ -407,9 +406,8 @@ export default function Soundboard() {
           )}
           <div className={`
             relative z-20 h-full
-            md:translate-x-0 md:transition-none
-            ${isDevicePanelOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
-            transition-transform duration-300 ease-in-out
+            mobile-panel md:translate-x-0 md:transition-none
+            ${isDevicePanelOpen ? 'open' : 'closed'}
           `}>
             <DeviceManagement
               devices={connectedDevices}
@@ -452,10 +450,9 @@ export default function Soundboard() {
         
         {/* Lighting Controls Panel - Mobile: Overlay, Desktop: Sidebar */}
         <div className={`
-          transition-all duration-300 ease-in-out z-20
-          md:relative md:block
-          ${isLightingPanelOpen ? 'fixed inset-0 md:relative md:w-80' : 'hidden md:w-0'}
-          ${isLightingPanelOpen ? 'md:overflow-hidden' : 'overflow-hidden'}
+          z-20
+          md:relative md:block md:w-80 md:transition-all md:duration-300 md:ease-in-out
+          ${isLightingPanelOpen ? 'fixed inset-0 md:relative' : 'hidden md:w-0'}
         `}>
           {/* Mobile backdrop */}
           {isLightingPanelOpen && (
@@ -466,9 +463,8 @@ export default function Soundboard() {
           )}
           <div className={`
             relative z-20 h-full
-            md:translate-x-0 md:transition-none
-            ${isLightingPanelOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-            transition-transform duration-300 ease-in-out
+            mobile-panel-right md:translate-x-0 md:transition-none
+            ${isLightingPanelOpen ? 'open' : 'closed'}
           `}>
             <LightingControls devices={connectedDevices} />
           </div>

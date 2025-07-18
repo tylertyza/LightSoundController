@@ -340,11 +340,11 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
                     <i className={`fas ${getIconComponent(item.icon, item.type)} text-white ${item.type === 'lighting' ? 'text-xs md:text-sm' : 'text-sm md:text-lg'}`}></i>
                   </div>
                   <div className={item.type === 'lighting' ? 'flex-1' : ''}>
-                    <h3 className={`text-white font-medium mb-1 group-hover:text-blue-300 transition-colors ${item.type === 'lighting' ? 'text-xs md:text-sm' : 'text-xs md:text-sm'}`}>
+                    <h3 className={`text-white font-medium mb-1 group-hover:text-blue-300 transition-colors drop-shadow-md ${item.type === 'lighting' ? 'text-xs md:text-sm' : 'text-xs md:text-sm'}`}>
                       {item.name}
                     </h3>
                     {item.description && item.type !== 'lighting' && (
-                      <p className="text-slate-400 text-xs line-clamp-2 group-hover:text-slate-300 transition-colors">
+                      <p className="text-slate-200 text-xs line-clamp-2 group-hover:text-slate-300 transition-colors drop-shadow-sm">
                         {item.description}
                       </p>
                     )}

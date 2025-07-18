@@ -220,6 +220,31 @@
   .backdrop-exit-active {
     opacity: 0;
   }
+  
+  /* Make sure mobile panels use transform instead of width changes */
+  .mobile-panel {
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  .mobile-panel.closed {
+    transform: translateX(-100%);
+  }
+  
+  .mobile-panel.open {
+    transform: translateX(0);
+  }
+  
+  .mobile-panel-right {
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  
+  .mobile-panel-right.closed {
+    transform: translateX(100%);
+  }
+  
+  .mobile-panel-right.open {
+    transform: translateX(0);
+  }
 }
 
 /* Dark theme colors for slate variants */
