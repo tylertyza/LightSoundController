@@ -221,6 +221,22 @@ export default function Soundboard() {
     setIsEditSceneModalOpen(true);
   };
 
+  const handleSceneDelete = async (sceneId: number) => {
+    try {
+      const response = await fetch(`/api/scenes/${sceneId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        refetchScenes();
+        setEditingScene(null);
+        setIsEditSceneModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Error deleting scene:', error);
+    }
+  };
+
   const handleLightingEffectClick = async (effect: any) => {
     try {
       const devices = connectedDevices.filter(d => d.isOnline && d.isAdopted);
@@ -384,6 +400,7 @@ export default function Soundboard() {
         }}
         onSaveSound={handleSoundSave}
         onSaveScene={handleSceneUpdate}
+        onDeleteScene={handleSceneDelete}
         devices={connectedDevices}
         editingScene={editingScene}
       />

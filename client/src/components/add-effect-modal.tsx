@@ -23,12 +23,13 @@ interface AddEffectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveSound: (data: InsertSoundButton & { audioFile: File }) => void;
-  onSaveScene: (data: InsertScene) => void;
+  onSaveScene: (data: InsertScene & { turnOnIfOff?: boolean; deviceSettings?: any }) => void;
+  onDeleteScene?: (id: number) => void;
   devices: Device[];
   editingScene?: Scene | null;
 }
 
-export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devices, editingScene }: AddEffectModalProps) {
+export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDeleteScene, devices, editingScene }: AddEffectModalProps) {
   const [effectType, setEffectType] = useState<'sound' | 'scene' | 'lighting'>('sound');
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   
@@ -53,6 +54,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
   const [sceneTemperature, setSceneTemperature] = useState(3500);
   const [sceneFadeIn, setSceneFadeIn] = useState(1000);
   const [sceneFadeOut, setSceneFadeOut] = useState(1000);
+  const [turnOnIfOff, setTurnOnIfOff] = useState(true);
+  const [deviceSettings, setDeviceSettings] = useState<{[key: string]: {color: string, brightness: number}}>({});
 
   // Initialize form with editing scene data
   useEffect(() => {
@@ -82,6 +85,28 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
         ? prev.filter(id => id !== deviceId)
         : [...prev, deviceId]
     );
+  };
+
+  const handleDeviceColorChange = (deviceId: string, color: string) => {
+    setDeviceSettings(prev => ({
+      ...prev,
+      [deviceId]: {
+        ...prev[deviceId],
+        color,
+        brightness: prev[deviceId]?.brightness || 80
+      }
+    }));
+  };
+
+  const handleDeviceBrightnessChange = (deviceId: string, brightness: number) => {
+    setDeviceSettings(prev => ({
+      ...prev,
+      [deviceId]: {
+        ...prev[deviceId],
+        brightness,
+        color: prev[deviceId]?.color || '#ffffff'
+      }
+    }));
   };
 
   const handleSubmit = () => {
@@ -133,9 +158,18 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
         icon: sceneIcon,
         targetDevices: selectedDevices,
         customJson: null,
+        turnOnIfOff,
+        deviceSettings
       });
     }
     
+    handleClose();
+  };
+
+  const handleDelete = () => {
+    if (editingScene && onDeleteScene) {
+      onDeleteScene(editingScene.id);
+    }
     handleClose();
   };
 
@@ -157,6 +191,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
     setSceneColor('#ffffff');
     setSceneTemperature(3500);
     setSelectedDevices([]);
+    setTurnOnIfOff(true);
+    setDeviceSettings({});
     onClose();
   };
 
@@ -353,6 +389,18 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               />
             </div>
 
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="turnOnIfOff"
+                checked={turnOnIfOff}
+                onCheckedChange={(checked) => setTurnOnIfOff(checked as boolean)}
+                className="border-slate-600"
+              />
+              <Label htmlFor="turnOnIfOff" className="text-white">
+                Turn on light if off
+              </Label>
+            </div>
+
             {/* Per-Device Controls */}
             <div>
               <Label className="text-white mb-3 block">Device-Specific Settings</Label>
@@ -375,26 +423,20 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
                         <Label className="text-slate-400 text-xs">Color</Label>
                         <Input
                           type="color"
-                          defaultValue={sceneColor}
+                          value={deviceSettings[device.id]?.color || sceneColor}
                           className="w-full h-8 bg-slate-700 border-slate-600 p-0"
-                          onChange={(e) => {
-                            // Handle device-specific color changes
-                            console.log(`Device ${device.label} color:`, e.target.value);
-                          }}
+                          onChange={(e) => handleDeviceColorChange(device.id.toString(), e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="text-slate-400 text-xs">Brightness</Label>
+                        <Label className="text-slate-400 text-xs">Brightness ({deviceSettings[device.id]?.brightness || sceneBrightness}%)</Label>
                         <input
                           type="range"
                           min="1"
                           max="100"
-                          defaultValue={sceneBrightness}
+                          value={deviceSettings[device.id]?.brightness || sceneBrightness}
                           className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                          onChange={(e) => {
-                            // Handle device-specific brightness changes
-                            console.log(`Device ${device.label} brightness:`, e.target.value);
-                          }}
+                          onChange={(e) => handleDeviceBrightnessChange(device.id.toString(), parseInt(e.target.value))}
                         />
                       </div>
                     </div>
@@ -426,35 +468,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
               </div>
             </div>
 
-            <div className="space-y-4">
-              <Label className="text-white">Device-Specific Colors</Label>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {adoptedDevices.map((device) => (
-                  <div key={device.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
-                      <span className="text-white text-sm">{device.name || `Device ${device.id}`}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        type="color"
-                        defaultValue={sceneColor}
-                        className="w-10 h-8 bg-slate-800 border-slate-700 p-0"
-                        onChange={(e) => {
-                          // Handle device-specific color changes
-                          console.log(`Device ${device.id} color:`, e.target.value);
-                        }}
-                      />
-                      <Checkbox
-                        checked={selectedDevices.includes(device.id.toString())}
-                        onCheckedChange={() => handleDeviceToggle(device.id.toString())}
-                        className="border-slate-600"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+
           </TabsContent>
 
           <TabsContent value="lighting" className="space-y-4">
@@ -515,8 +529,8 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
           </TabsContent>
         </Tabs>
 
-        {/* Device Selection - Only show for sound and scene tabs */}
-        {effectType !== 'lighting' && (
+        {/* Device Selection - Only show for sound tabs */}
+        {effectType === 'sound' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-white">Target Devices</Label>
@@ -563,6 +577,15 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
           <Button variant="outline" onClick={handleClose} className="border-slate-700 text-slate-400">
             Cancel
           </Button>
+          {editingScene && (
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </Button>
+          )}
           <Button
             onClick={handleSubmit}
             disabled={
@@ -573,7 +596,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
             className="bg-emerald-600 hover:bg-emerald-700"
           >
             <Zap className="w-4 h-4 mr-2" />
-            {effectType === 'lighting' ? 'Manage Effects' : editingScene ? 'Update Scene' : 'Create Effect'}
+            {effectType === 'lighting' ? 'Manage Effects' : editingScene ? 'Update' : 'Create Effect'}
           </Button>
         </div>
       </DialogContent>
