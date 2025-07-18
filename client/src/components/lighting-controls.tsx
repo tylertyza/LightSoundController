@@ -24,10 +24,15 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       const response = await apiRequest("POST", `/api/devices/${deviceId}/power`, { power });
       return response.json();
     },
-    onSuccess: () => {
-      // Force a fresh fetch of devices to ensure UI state is correct
+    onSuccess: (data) => {
+      // Wait for server response before updating UI
+      queryClient.setQueryData(['/api/devices'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((device: any) => 
+          device.id === data.id ? { ...device, power: data.power } : device
+        );
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
-      queryClient.refetchQueries({ queryKey: ['/api/devices'] });
     },
     onError: (error) => {
       console.error('Power toggle failed:', error);
@@ -174,7 +179,11 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                         powerMutation.mutate({ deviceId: device.id, power: !device.power });
                       }}
                       disabled={powerMutation.isPending}
-                      className="text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                      className={`text-xs px-2 py-1 rounded text-white disabled:opacity-50 ${
+                        powerMutation.isPending 
+                          ? 'bg-amber-600' 
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
                     >
                       {powerMutation.isPending ? (
                         <i className="fas fa-spinner fa-spin"></i>

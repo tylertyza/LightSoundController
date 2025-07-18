@@ -74,6 +74,26 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
         setSceneFadeIn(config.fadeIn || 1000);
         setSceneFadeOut(config.fadeOut || 1000);
       }
+      
+      // Load device-specific settings
+      const savedDeviceSettings = (editingScene as any).deviceSettings || {};
+      setDeviceSettings(savedDeviceSettings);
+      
+      // Load turnOnIfOff setting
+      setTurnOnIfOff((editingScene as any).turnOnIfOff !== false);
+    } else {
+      // Reset form when not editing
+      setEffectType('sound');
+      setSceneName('');
+      setSceneDescription('');
+      setSceneIcon('lightbulb');
+      setSelectedDevices([]);
+      setSceneColor('#ffffff');
+      setSceneBrightness(80);
+      setSceneFadeIn(1000);
+      setSceneFadeOut(1000);
+      setDeviceSettings({});
+      setTurnOnIfOff(true);
     }
   }, [editingScene]);
 
