@@ -270,7 +270,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   
   return (
     <div className="w-full md:w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
-      <div className="p-3 md:p-4 border-b border-slate-700">
+      <div className="p-3 md:p-4 border-b border-slate-700"
+           style={{ touchAction: 'pan-y' }}>
         <div className="flex items-center justify-between">
           <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
             <i className="fas fa-palette mr-2"></i>
@@ -287,7 +288,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       </div>
       
       {/* Adopted Devices */}
-      <div className="p-3 md:p-4 border-b border-slate-700">
+      <div className="p-3 md:p-4 border-b border-slate-700"
+           style={{ touchAction: 'pan-y' }}>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-medium text-slate-300">Adopted Devices</h3>
           {adoptedDevices.length > 0 && (
@@ -355,7 +357,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
 
       
       {/* Color Control */}
-      <div className="p-3 md:p-4 border-b border-slate-700">
+      <div className="p-3 md:p-4 border-b border-slate-700"
+           style={{ touchAction: 'pan-y' }}>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-medium text-slate-300">Color & Brightness</h3>
           <div className="text-xs text-slate-400">

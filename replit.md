@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Mobile Interface Bug Fixes** (July 18, 2025): Fixed mobile panel issues with improved scrolling, less sensitive dismissal behavior, and replaced confusing arrow icons with relevant panel icons (router for device management, palette for lighting controls). Enhanced touch handling with proper pan-y behavior for better mobile experience
 - **Lighting Effects Improvements** (July 18, 2025): Fixed exact duration progress bars based on steps, fade times, and loops. Added device state saving and restoration after effects finish. Fixed mobile single-tap activation for lighting effects. Improved device status updates to include power state. Removed infinite loop effects from sound creation dropdown
 - **Modal Tab Text Color Fix** (July 18, 2025): Fixed black text on active tabs in modal by adding explicit white text color override for active tab states
 - **Mobile Interface Bug Fixes** (July 18, 2025): Fixed single-tap activation on soundboard items by preventing default touch behavior and event propagation. Added periodic device status updates every second for real-time color circle updates. Fixed duplicate plus/minus icons in device management mobile buttons

@@ -156,7 +156,7 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
       <div className="p-3 md:p-4 border-b border-slate-700">
         <div className="flex items-center justify-between">
           <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
-            <i className="fas fa-cog mr-2"></i>
+            <i className="fas fa-router mr-2"></i>
             Device Management
           </h2>
           {/* Close button for mobile */}
@@ -191,7 +191,7 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
       </div>
       
       {/* Device List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ touchAction: 'pan-y' }}>
         <div className="p-3 md:p-4">
           <h3 className="text-sm font-medium text-slate-300 mb-3">Connected Devices</h3>
           

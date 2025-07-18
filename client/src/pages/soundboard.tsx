@@ -420,7 +420,7 @@ export default function Soundboard() {
               className="text-slate-400 hover:text-white transition-colors p-1 touch-manipulation"
               title="Toggle Device Panel"
             >
-              <i className={`fas fa-${isDevicePanelOpen ? 'angle-left' : 'angle-right'} text-lg`}></i>
+              <i className={`fas fa-${isDevicePanelOpen ? 'cogs' : 'router'} text-lg`}></i>
             </button>
             <i className="fas fa-lightbulb text-blue-400 text-xl md:text-2xl"></i>
             <h1 className="text-lg md:text-xl font-bold text-white truncate">
@@ -444,7 +444,7 @@ export default function Soundboard() {
               className="text-slate-400 hover:text-white transition-colors p-1 touch-manipulation"
               title="Toggle Lighting Panel"
             >
-              <i className={`fas fa-${isLightingPanelOpen ? 'angle-right' : 'angle-left'} text-lg`}></i>
+              <i className={`fas fa-${isLightingPanelOpen ? 'palette' : 'lightbulb'} text-lg`}></i>
             </button>
           </div>
         </div>
@@ -461,7 +461,12 @@ export default function Soundboard() {
           {isDevicePanelOpen && (
             <div 
               className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 transition-opacity duration-300 ease-in-out"
-              onClick={() => setIsDevicePanelOpen(false)}
+              onClick={(e) => {
+                // Only close if backdrop was clicked directly, not children
+                if (e.target === e.currentTarget) {
+                  setIsDevicePanelOpen(false);
+                }
+              }}
             />
           )}
           <div 
@@ -470,6 +475,7 @@ export default function Soundboard() {
               md:relative md:translate-x-0 md:overflow-hidden
               ${isDevicePanelOpen ? 'fixed inset-0 z-20 translate-x-0' : 'fixed inset-0 z-20 -translate-x-full md:translate-x-0'}
             `}
+            style={{ touchAction: 'pan-y' }}
           >
             <DeviceManagement
               devices={connectedDevices}
@@ -521,7 +527,12 @@ export default function Soundboard() {
           {isLightingPanelOpen && (
             <div 
               className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 transition-opacity duration-300 ease-in-out"
-              onClick={() => setIsLightingPanelOpen(false)}
+              onClick={(e) => {
+                // Only close if backdrop was clicked directly, not children
+                if (e.target === e.currentTarget) {
+                  setIsLightingPanelOpen(false);
+                }
+              }}
             />
           )}
           <div 
@@ -530,6 +541,7 @@ export default function Soundboard() {
               md:relative md:translate-x-0 md:overflow-hidden
               ${isLightingPanelOpen ? 'fixed inset-0 z-20 translate-x-0' : 'fixed inset-0 z-20 translate-x-full md:translate-x-0'}
             `}
+            style={{ touchAction: 'pan-y' }}
           >
             <LightingControls devices={connectedDevices} />
           </div>
