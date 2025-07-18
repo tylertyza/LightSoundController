@@ -461,12 +461,6 @@ export default function Soundboard() {
           {isDevicePanelOpen && (
             <div 
               className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 transition-opacity duration-300 ease-in-out"
-              onClick={(e) => {
-                // Only close if backdrop was clicked directly, not children
-                if (e.target === e.currentTarget) {
-                  setIsDevicePanelOpen(false);
-                }
-              }}
             />
           )}
           <div 
@@ -527,12 +521,6 @@ export default function Soundboard() {
           {isLightingPanelOpen && (
             <div 
               className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10 transition-opacity duration-300 ease-in-out"
-              onClick={(e) => {
-                // Only close if backdrop was clicked directly, not children
-                if (e.target === e.currentTarget) {
-                  setIsLightingPanelOpen(false);
-                }
-              }}
             />
           )}
           <div 

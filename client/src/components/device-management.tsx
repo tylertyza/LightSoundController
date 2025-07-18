@@ -191,7 +191,7 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
       </div>
       
       {/* Device List */}
-      <div className="flex-1 overflow-y-auto" style={{ touchAction: 'pan-y' }}>
+      <div className="flex-1 overflow-y-auto pb-20 md:pb-4" style={{ touchAction: 'pan-y' }}>
         <div className="p-3 md:p-4">
           <h3 className="text-sm font-medium text-slate-300 mb-3">Connected Devices</h3>
           

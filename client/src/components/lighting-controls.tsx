@@ -314,7 +314,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       </div>
       
       {/* Scrollable Content Container */}
-      <div className="flex-1 overflow-y-auto" style={{ touchAction: 'pan-y' }}>
+      <div className="flex-1 overflow-y-auto pb-20 md:pb-4" style={{ touchAction: 'pan-y' }}>
         {/* Adopted Devices */}
         <div className="p-3 md:p-4 border-b border-slate-700">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
