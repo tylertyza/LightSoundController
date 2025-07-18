@@ -54,8 +54,11 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
         // Check if it's a timed effect (not infinite loop)
         // Don't show progress bar for infinite loops (loopCount === 0)
         const isInfiniteLoop = item.customJson?.loopCount === 0;
-        if (item.duration && item.duration > 0 && !isInfiniteLoop) {
-          startProgressBar(itemKey, item.duration);
+        if (!isInfiniteLoop) {
+          const effectDuration = calculateEffectDuration(item);
+          if (effectDuration > 0) {
+            startProgressBar(itemKey, effectDuration);
+          }
         }
       }
     } else {
@@ -81,6 +84,30 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
         return newSet;
       });
     }, 300);
+  };
+
+  const calculateEffectDuration = (effect: any) => {
+    if (!effect.customJson) return effect.duration || 1000;
+    
+    const config = effect.customJson;
+    const steps = config.steps || [];
+    const loopCount = config.loopCount || 1;
+    const globalDelay = config.globalDelay || 0;
+    
+    // Calculate duration of one cycle
+    let cycleDuration = 0;
+    steps.forEach((step: any) => {
+      cycleDuration += (step.duration || 1000);
+      cycleDuration += (step.delay || 0);
+    });
+    
+    // Add global delay
+    cycleDuration += globalDelay;
+    
+    // Multiply by loop count (if not infinite)
+    if (loopCount === 0) return 0; // Infinite loop
+    
+    return cycleDuration * loopCount;
   };
 
   const startProgressBar = (itemKey: string, duration: number) => {
@@ -340,10 +367,16 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
                 className={getItemStyle(item, isActive, isPersistent)}
                 onClick={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   handleItemClick(item);
                 }}
                 onTouchStart={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                 }}
               >
                 <div className={`flex ${item.type === 'lighting' ? 'flex-row items-center' : 'flex-col items-center justify-center'} h-full text-center`}>

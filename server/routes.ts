@@ -643,6 +643,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No adopted devices available' });
       }
 
+      // Save current state before applying effect
+      const deviceStates = new Map();
+      for (const device of targetDevices) {
+        deviceStates.set(device.id, {
+          power: device.power,
+          brightness: device.brightness,
+          color: device.color,
+          temperature: device.temperature
+        });
+      }
+
       // Use loop count from custom JSON if available, otherwise use passed loopCount
       const finalLoopCount = effect.customJson?.loopCount !== undefined ? effect.customJson.loopCount : loopCount;
 
@@ -654,6 +665,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const device of targetDevices) {
           lifxService.triggerEffect(device.mac, device.ip, effect.type, effect.duration);
         }
+      }
+
+      // Store the saved states for later restoration (if not infinite loop)
+      if (finalLoopCount !== 0) {
+        // Calculate total duration and schedule restoration
+        const totalDuration = calculateTotalEffectDuration(effect, finalLoopCount);
+        setTimeout(async () => {
+          await restoreDeviceStates(deviceStates, targetDevices);
+        }, totalDuration);
       }
 
       broadcast({ type: 'light_effect_applied', payload: { effectId, devices: targetDevices.map(d => d.id) } });
@@ -737,6 +757,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Apply effect to all target devices using the new LIFX service method
     for (const device of targetDevices) {
       lifxService.applyCustomEffect(device.mac, device.ip, customJson, loopCount);
+    }
+  }
+
+  // Helper function to calculate total effect duration
+  function calculateTotalEffectDuration(effect: any, loopCount: number) {
+    if (!effect.customJson) return effect.duration || 1000;
+    
+    const config = effect.customJson;
+    const steps = config.steps || [];
+    const globalDelay = config.globalDelay || 0;
+    
+    // Calculate duration of one cycle
+    let cycleDuration = 0;
+    steps.forEach((step: any) => {
+      cycleDuration += (step.duration || 1000);
+      cycleDuration += (step.delay || 0);
+    });
+    
+    // Add global delay
+    cycleDuration += globalDelay;
+    
+    // Multiply by loop count
+    return cycleDuration * loopCount;
+  }
+
+  // Helper function to restore device states
+  async function restoreDeviceStates(deviceStates: Map<number, any>, targetDevices: Device[]) {
+    for (const device of targetDevices) {
+      const savedState = deviceStates.get(device.id);
+      if (savedState) {
+        // Restore power state
+        if (savedState.power !== undefined) {
+          lifxService.setPower(device.mac, device.ip, savedState.power);
+        }
+        
+        // Restore color and brightness
+        if (savedState.color) {
+          lifxService.setColor(device.mac, device.ip, {
+            hue: savedState.color.hue,
+            saturation: savedState.color.saturation,
+            brightness: savedState.color.brightness || Math.round((savedState.brightness || 100) / 100 * 65535),
+            kelvin: savedState.temperature || 3500
+          });
+        } else if (savedState.brightness) {
+          lifxService.setBrightness(device.mac, device.ip, savedState.brightness);
+        }
+        
+        // Update device state in storage
+        await storage.updateDevice(device.id, {
+          power: savedState.power,
+          brightness: savedState.brightness,
+          color: savedState.color,
+          temperature: savedState.temperature
+        });
+      }
     }
   }
 

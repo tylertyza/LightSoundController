@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 // Helper function to generate status circle color based on device state
 const getDeviceStatusColor = (device: Device) => {
   // If device is off, return black
-  if (!device.power) {
+  if (device.power === false) {
     return '#000000';
   }
   

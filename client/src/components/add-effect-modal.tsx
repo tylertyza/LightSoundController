@@ -464,7 +464,7 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, onDe
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
                     <SelectItem value="none" className="text-white">No lighting effect</SelectItem>
-                    {lightEffects.map((effect) => (
+                    {lightEffects.filter(effect => effect.customJson?.loopCount !== 0).map((effect) => (
                       <SelectItem key={effect.id} value={effect.id.toString()} className="text-white">
                         {effect.name}
                       </SelectItem>
