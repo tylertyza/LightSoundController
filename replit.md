@@ -10,6 +10,9 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Soundboard Grid Redesign** (July 18, 2025): Separated effects into sections with Sound Effects, Lighting Scenes, and Lighting Effects. Added horizontal layout for lighting effects and progress bars for timed effects
+- **Persistent Active States** (July 18, 2025): Added visual indicators for active scenes and looping effects with blue ring outline
+- **Effect Overwrite System** (July 18, 2025): When selecting different effects, previous selections are automatically overwritten
 - **Lighting Effects Panel Relocation** (July 18, 2025): Moved lighting effects from sidebar to main panel, added new "Lighting Effects" tab in Add Effect modal
 - **Per-Device Lighting Controls** (July 18, 2025): Removed global color/brightness settings, implemented per-bulb controls with device names instead of IDs
 - **Dynamic Effects Removal** (July 18, 2025): Removed dynamic effects section from lighting controls for simplified interface
@@ -53,10 +56,11 @@ Preferred communication style: Simple, everyday language.
 - **WebSocket Handler**: Real-time bidirectional communication for device updates
 
 ### Frontend Components
-- **Soundboard Grid**: Interactive grid of sound effect buttons with color-coded themes
+- **Soundboard Grid**: Sectioned grid with separate areas for Sound Effects, Lighting Scenes, and Lighting Effects with horizontal layout for lighting effects
 - **Device Management**: LIFX device discovery and control interface (collapsible)
-- **Lighting Effects Panel**: Dedicated panel for managing preset and custom lighting effects (moved from sidebar)
-- **Add Effect Modal**: Unified modal with three tabs (Sound Effect, Lighting Scene, Lighting Effects) for comprehensive effect management
+- **Progress Indicators**: Real-time progress bars for timed effects showing duration completion
+- **Persistent Active States**: Visual ring indicators for active scenes and looping effects with automatic overwrite system
+- **Add Effect Modal**: Unified modal with three tabs for comprehensive effect management, restricted looping effects in sound creation
 - **Per-Device Controls**: Device-specific color and brightness settings with bulb names for intuitive control
 - **Collapsible Panels**: Smooth animations for hiding/showing side panels
 - **Custom JSON Effects**: Support for advanced lighting effects with brightness, color, timing, and easing controls

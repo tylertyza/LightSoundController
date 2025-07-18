@@ -283,11 +283,10 @@ export function AddEffectModal({ isOpen, onClose, onSaveSound, onSaveScene, devi
                   <SelectValue placeholder="Select a lighting effect" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700">
-                  <SelectItem value="breathe" className="text-white">Breathe</SelectItem>
+                  <SelectItem value="flash" className="text-white">Flash</SelectItem>
                   <SelectItem value="pulse" className="text-white">Pulse</SelectItem>
                   <SelectItem value="strobe" className="text-white">Strobe</SelectItem>
                   <SelectItem value="fade" className="text-white">Fade</SelectItem>
-                  <SelectItem value="cycle" className="text-white">Color Cycle</SelectItem>
                 </SelectContent>
               </Select>
             </div>
