@@ -7,108 +7,100 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Device } from "@shared/schema";
 
 
-interface LightingEffect {
-  id: string;
-  name: string;
-  description?: string;
-  isPreset: boolean;
-  json: any;
-}
+interface LightingEffectsProps {}
 
-interface LightingEffectsProps {
-  onEffectSelect?: (effect: LightingEffect) => void;
-}
 
-const presetEffects: LightingEffect[] = [
-  {
-    id: "breathe",
-    name: "Breathe",
-    description: "Gentle breathing effect",
-    isPreset: true,
-    json: {
-      name: "Breathe",
-      steps: [
-        { brightness: 20, color: "#4F46E5", duration: 2000, easing: "ease-in-out" },
-        { brightness: 80, color: "#4F46E5", duration: 2000, easing: "ease-in-out" }
-      ],
-      loop: true
-    }
-  },
-  {
-    id: "pulse",
-    name: "Pulse",
-    description: "Quick pulse effect",
-    isPreset: true,
-    json: {
-      name: "Pulse",
-      steps: [
-        { brightness: 10, color: "#EF4444", duration: 300, easing: "ease-out" },
-        { brightness: 100, color: "#EF4444", duration: 300, easing: "ease-in" }
-      ],
-      loop: true
-    }
-  },
-  {
-    id: "strobe",
-    name: "Strobe",
-    description: "Fast strobe effect",
-    isPreset: true,
-    json: {
-      name: "Strobe",
-      steps: [
-        { brightness: 0, color: "#FFFFFF", duration: 100, easing: "linear" },
-        { brightness: 100, color: "#FFFFFF", duration: 100, easing: "linear" }
-      ],
-      loop: true
-    }
-  },
-  {
-    id: "fade",
-    name: "Fade",
-    description: "Smooth fade effect",
-    isPreset: true,
-    json: {
-      name: "Fade",
-      steps: [
-        { brightness: 100, color: "#F59E0B", duration: 3000, easing: "ease-in-out" },
-        { brightness: 0, color: "#F59E0B", duration: 3000, easing: "ease-in-out" }
-      ],
-      loop: true
-    }
-  },
-  {
-    id: "cycle",
-    name: "Color Cycle",
-    description: "Rainbow color cycle",
-    isPreset: true,
-    json: {
-      name: "Color Cycle",
-      steps: [
-        { brightness: 80, color: "#EF4444", duration: 1000, easing: "ease-in-out" },
-        { brightness: 80, color: "#F59E0B", duration: 1000, easing: "ease-in-out" },
-        { brightness: 80, color: "#10B981", duration: 1000, easing: "ease-in-out" },
-        { brightness: 80, color: "#3B82F6", duration: 1000, easing: "ease-in-out" },
-        { brightness: 80, color: "#8B5CF6", duration: 1000, easing: "ease-in-out" },
-        { brightness: 80, color: "#EC4899", duration: 1000, easing: "ease-in-out" }
-      ],
-      loop: true
-    }
-  }
-];
 
-export default function LightingEffects({ onEffectSelect }: LightingEffectsProps) {
-  const [customEffects, setCustomEffects] = useState<LightingEffect[]>([]);
+export default function LightingEffects() {
+  const queryClient = useQueryClient();
   const [isAddEffectOpen, setIsAddEffectOpen] = useState(false);
   const [isEditEffectOpen, setIsEditEffectOpen] = useState(false);
-  const [editingEffect, setEditingEffect] = useState<LightingEffect | null>(null);
+  const [editingEffect, setEditingEffect] = useState<any>(null);
   const [newEffectName, setNewEffectName] = useState("");
   const [newEffectDescription, setNewEffectDescription] = useState("");
   const [newEffectJson, setNewEffectJson] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const allEffects = [...presetEffects, ...customEffects];
+  // Fetch lighting effects from the database
+  const { data: lightEffects = [], isLoading } = useQuery({
+    queryKey: ['/api/light-effects'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/light-effects');
+      return response.json();
+    },
+  });
+
+  // Apply effect mutation
+  const applyEffectMutation = useMutation({
+    mutationFn: async ({ effectId, loopCount = 1 }: { effectId: number; loopCount?: number }) => {
+      const response = await apiRequest('POST', `/api/light-effects/${effectId}/apply`, { loopCount });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+    },
+  });
+
+  // Stop effect mutation
+  const stopEffectMutation = useMutation({
+    mutationFn: async (effectId: number) => {
+      const response = await apiRequest('POST', `/api/light-effects/${effectId}/stop`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+    },
+  });
+
+  // Delete effect mutation
+  const deleteEffectMutation = useMutation({
+    mutationFn: async (effectId: number) => {
+      const response = await apiRequest('DELETE', `/api/light-effects/${effectId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/light-effects'] });
+    },
+  });
+
+  // Create effect mutation
+  const createEffectMutation = useMutation({
+    mutationFn: async (effectData: any) => {
+      const response = await apiRequest('POST', '/api/light-effects', effectData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/light-effects'] });
+      setIsAddEffectOpen(false);
+      resetForm();
+    },
+  });
+
+  // Update effect mutation
+  const updateEffectMutation = useMutation({
+    mutationFn: async ({ effectId, effectData }: { effectId: number; effectData: any }) => {
+      const response = await apiRequest('PUT', `/api/light-effects/${effectId}`, effectData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/light-effects'] });
+      setIsEditEffectOpen(false);
+      resetForm();
+    },
+  });
+
+  const resetForm = () => {
+    setNewEffectName("");
+    setNewEffectDescription("");
+    setNewEffectJson("");
+    setSelectedFile(null);
+    setEditingEffect(null);
+  };
 
   const exampleJson = {
     name: "Custom Effect",
@@ -141,34 +133,29 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
 
     try {
       const parsedJson = JSON.parse(newEffectJson);
-      const newEffect: LightingEffect = {
-        id: `custom-${Date.now()}`,
+      const effectData = {
         name: newEffectName,
         description: newEffectDescription,
-        isPreset: false,
-        json: parsedJson
+        type: "custom",
+        duration: parsedJson.duration || 1000,
+        customJson: parsedJson
       };
 
-      setCustomEffects(prev => [...prev, newEffect]);
-      setNewEffectName("");
-      setNewEffectDescription("");
-      setNewEffectJson("");
-      setSelectedFile(null);
-      setIsAddEffectOpen(false);
+      createEffectMutation.mutate(effectData);
     } catch (error) {
       console.error('Invalid JSON:', error);
     }
   };
 
-  const handleDeleteCustomEffect = (id: string) => {
-    setCustomEffects(prev => prev.filter(effect => effect.id !== id));
+  const handleDeleteCustomEffect = (id: number) => {
+    deleteEffectMutation.mutate(id);
   };
 
-  const handleEditEffect = (effect: LightingEffect) => {
+  const handleEditEffect = (effect: any) => {
     setEditingEffect(effect);
     setNewEffectName(effect.name);
     setNewEffectDescription(effect.description || "");
-    setNewEffectJson(JSON.stringify(effect.json, null, 2));
+    setNewEffectJson(JSON.stringify(effect.customJson || {}, null, 2));
     setIsEditEffectOpen(true);
   };
 
@@ -177,33 +164,15 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
 
     try {
       const parsedJson = JSON.parse(newEffectJson);
-      
-      if (editingEffect.isPreset) {
-        // Create a copy of the preset as a custom effect
-        const newCustomEffect: LightingEffect = {
-          id: `custom-${Date.now()}`,
-          name: newEffectName,
-          description: newEffectDescription,
-          isPreset: false,
-          json: parsedJson
-        };
-        setCustomEffects(prev => [...prev, newCustomEffect]);
-      } else {
-        // Update existing custom effect
-        setCustomEffects(prev => 
-          prev.map(effect => 
-            effect.id === editingEffect.id 
-              ? { ...effect, name: newEffectName, description: newEffectDescription, json: parsedJson }
-              : effect
-          )
-        );
-      }
-      
-      setNewEffectName("");
-      setNewEffectDescription("");
-      setNewEffectJson("");
-      setEditingEffect(null);
-      setIsEditEffectOpen(false);
+      const effectData = {
+        name: newEffectName,
+        description: newEffectDescription,
+        type: "custom",
+        duration: parsedJson.duration || 1000,
+        customJson: parsedJson
+      };
+
+      updateEffectMutation.mutate({ effectId: editingEffect.id, effectData });
     } catch (error) {
       console.error('Invalid JSON:', error);
     }
@@ -331,13 +300,7 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
                   rows={10}
                 />
               </div>
-              {editingEffect?.isPreset && (
-                <div className="bg-blue-900/20 border border-blue-700 rounded p-3">
-                  <p className="text-blue-300 text-sm">
-                    Note: Editing a preset effect will create a new custom effect with your changes.
-                  </p>
-                </div>
-              )}
+
               <div className="flex justify-end space-x-2">
                 <Button
                   variant="outline"
@@ -350,7 +313,7 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
                   onClick={handleSaveEditedEffect}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  Save {editingEffect?.isPreset ? 'as Custom' : 'Changes'}
+                  Save Changes
                 </Button>
               </div>
             </div>
@@ -360,36 +323,44 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
 
       <div className="h-[400px] w-full rounded-md border border-slate-700 bg-slate-800 p-4 overflow-y-auto">
         <div className="space-y-2">
-          {allEffects.map((effect) => (
-            <Card 
-              key={effect.id} 
-              className="bg-slate-800 border-slate-700 hover:bg-slate-700 cursor-pointer transition-colors"
-              onClick={() => onEffectSelect?.(effect)}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Lightbulb className="w-4 h-4 text-amber-400" />
-                    <CardTitle className="text-white text-sm">{effect.name}</CardTitle>
-                    {effect.isPreset && (
-                      <Badge variant="outline" className="text-xs text-blue-400 border-blue-400">
-                        Preset
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditEffect(effect);
-                      }}
-                      className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-                    >
-                      <Edit className="w-3 h-3" />
-                    </Button>
-                    {!effect.isPreset && (
+          {isLoading ? (
+            <div className="flex justify-center items-center h-20">
+              <div className="text-slate-400">Loading effects...</div>
+            </div>
+          ) : lightEffects.length === 0 ? (
+            <div className="flex justify-center items-center h-20">
+              <div className="text-slate-400">No lighting effects found</div>
+            </div>
+          ) : (
+            lightEffects.map((effect: any) => (
+              <Card 
+                key={effect.id} 
+                className="bg-slate-800 border-slate-700 hover:bg-slate-700 cursor-pointer transition-colors"
+                onClick={() => applyEffectMutation.mutate({ effectId: effect.id })}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Lightbulb className="w-4 h-4 text-amber-400" />
+                      <CardTitle className="text-white text-sm">{effect.name}</CardTitle>
+                      {effect.customJson && (
+                        <Badge variant="outline" className="text-xs text-green-400 border-green-400">
+                          Custom
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditEffect(effect);
+                        }}
+                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -401,19 +372,19 @@ export default function LightingEffects({ onEffectSelect }: LightingEffectsProps
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              {effect.description && (
-                <CardContent className="pt-0">
-                  <CardDescription className="text-slate-400 text-xs">
-                    {effect.description}
-                  </CardDescription>
-                </CardContent>
-              )}
-            </Card>
-          ))}
+                </CardHeader>
+                {effect.description && (
+                  <CardContent className="pt-0">
+                    <CardDescription className="text-slate-400 text-xs">
+                      {effect.description}
+                    </CardDescription>
+                  </CardContent>
+                )}
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </div>

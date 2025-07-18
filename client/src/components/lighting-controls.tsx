@@ -496,7 +496,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
         
         {/* Lighting Effects */}
         <div className="border-t border-slate-700">
-          <LightingEffects devices={devices} />
+          <LightingEffects />
         </div>
       </div>
     </div>
