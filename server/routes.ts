@@ -281,6 +281,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to start device discovery' });
     }
   });
+
+  // Manual device status refresh
+  app.post('/api/devices/refresh-status', async (req, res) => {
+    try {
+      lifxService.requestAllDeviceStates();
+      res.json({ message: 'Device status refresh triggered' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to refresh device status' });
+    }
+  });
   
   app.post('/api/devices/:id/power', async (req, res) => {
     try {

@@ -636,7 +636,7 @@ export class LifxUDPService extends EventEmitter {
     }, 2000);
   }
 
-  private requestAllDeviceStates() {
+  public requestAllDeviceStates() {
     for (const device of this.discoveredDevices.values()) {
       if (device.ip && device.mac) {
         this.requestDevicePower(device.mac, device.ip);

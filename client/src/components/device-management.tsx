@@ -142,6 +142,23 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
       setTimeout(() => setIsDiscovering(false), 3000);
     }
   };
+
+  const handleRefreshStatus = async () => {
+    try {
+      await apiRequest("POST", "/api/devices/refresh-status");
+      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
+      toast({
+        title: "Status refreshed",
+        description: "Requesting updated status from all devices",
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to refresh device status",
+        variant: "destructive",
+      });
+    }
+  };
   
   const handleAdoptDevice = (device: Device) => {
     adoptDeviceMutation.mutate({ deviceId: device.id, adopt: !device.isAdopted });
@@ -173,16 +190,28 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
       <div className="p-3 md:p-4 border-b border-slate-700">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-medium text-slate-300">Discovery</h3>
-          <Button
-            onClick={handleDiscoverDevices}
-            disabled={isDiscovering}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 touch-manipulation"
-          >
-            <i className={`fas ${isDiscovering ? 'fa-spinner fa-spin' : 'fa-search'} mr-1`}></i>
-            <span className="hidden sm:inline">{isDiscovering ? 'Scanning...' : 'Scan Network'}</span>
-            <span className="sm:hidden">{isDiscovering ? 'Scan...' : 'Scan'}</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleDiscoverDevices}
+              disabled={isDiscovering}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 touch-manipulation"
+            >
+              <i className={`fas ${isDiscovering ? 'fa-spinner fa-spin' : 'fa-search'} mr-1`}></i>
+              <span className="hidden sm:inline">{isDiscovering ? 'Scanning...' : 'Scan Network'}</span>
+              <span className="sm:hidden">{isDiscovering ? 'Scan...' : 'Scan'}</span>
+            </Button>
+            <Button
+              onClick={handleRefreshStatus}
+              size="sm"
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700 touch-manipulation"
+            >
+              <i className="fas fa-sync-alt mr-1"></i>
+              <span className="hidden sm:inline">Refresh Status</span>
+              <span className="sm:hidden">Refresh</span>
+            </Button>
+          </div>
         </div>
         <div className="bg-slate-900 rounded-lg p-2 md:p-3">
           <div className="text-xs text-slate-400 mb-1 md:mb-2">UDP Port: 56700</div>
