@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Device, Scene } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,10 +16,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   const [brightness, setBrightness] = useState(80);
   const [temperature, setTemperature] = useState(3500);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<number[]>([]);
-  const [pendingPowerChanges, setPendingPowerChanges] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const powerTimeoutRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
   
   const adoptedDevices = devices.filter(d => d.isAdopted && d.isOnline);
   const selectedDevices = adoptedDevices.filter(d => selectedDeviceIds.includes(d.id));
@@ -56,46 +54,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     setSelectedDeviceIds([]);
   };
   
-  const powerMutation = useMutation({
-    mutationFn: async ({ deviceId, power }: { deviceId: number; power: boolean }) => {
-      // Optimistically update the UI immediately
-      queryClient.setQueryData(['/api/devices'], (oldData: Device[] | undefined) => {
-        if (!oldData) return oldData;
-        return oldData.map(device => 
-          device.id === deviceId ? { ...device, power } : device
-        );
-      });
-      
-      const response = await apiRequest("POST", `/api/devices/${deviceId}/power`, { power });
-      return response.json();
-    },
-    onSuccess: (data, variables) => {
-      // Remove from pending changes
-      setPendingPowerChanges(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(variables.deviceId);
-        return newSet;
-      });
-      // Refresh devices after successful power change
-      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
-    },
-    onError: (error, variables) => {
-      console.error('Power toggle failed:', error);
-      // Remove from pending changes
-      setPendingPowerChanges(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(variables.deviceId);
-        return newSet;
-      });
-      // Revert the optimistic update on error
-      queryClient.invalidateQueries({ queryKey: ['/api/devices'] });
-      toast({
-        title: "Error",
-        description: "Failed to toggle device power",
-        variant: "destructive",
-      });
-    },
-  });
+
   
   const colorMutation = useMutation({
     mutationFn: async ({ deviceId, color }: { deviceId: number; color: any }) => {
@@ -127,17 +86,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
     },
   });
   
-  const handleAllLightsOn = () => {
-    adoptedDevices.forEach(device => {
-      powerMutation.mutate({ deviceId: device.id, power: true });
-    });
-  };
-  
-  const handleAllLightsOff = () => {
-    adoptedDevices.forEach(device => {
-      powerMutation.mutate({ deviceId: device.id, power: false });
-    });
-  };
+
   
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
@@ -173,7 +122,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
           hue: Math.round(hue / 360 * 65535), 
           saturation: Math.round(saturation * 65535), 
           brightness: brightnessValue, 
-          kelvin: temperature 
+          kelvin: 0 // Use color instead of temperature
         }
       });
     });
@@ -190,10 +139,10 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       colorMutation.mutate({
         deviceId: device.id,
         color: { 
-          hue: device.color?.hue || 0, 
-          saturation: device.color?.saturation || 0, 
+          hue: 0, 
+          saturation: 0, 
           brightness: brightnessValue, 
-          kelvin: temperature 
+          kelvin: 0 // Use brightness only without color or temp
         }
       });
     });
@@ -210,8 +159,8 @@ export default function LightingControls({ devices }: LightingControlsProps) {
       colorMutation.mutate({
         deviceId: device.id,
         color: { 
-          hue: device.color?.hue || 0, 
-          saturation: device.color?.saturation || 0, 
+          hue: 0, 
+          saturation: 0, // Set to 0 to use white temperature instead of color
           brightness: brightnessValue, 
           kelvin: newTemperature 
         }
@@ -286,81 +235,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                     <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
                     <span className="text-sm font-medium text-white">{device.label}</span>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    {/* Status Indicator - Shows current power state */}
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${
-                      device.power 
-                        ? 'bg-emerald-600 text-white' 
-                        : 'bg-slate-600 text-slate-300'
-                    }`}>
-                      <i className={`fas ${device.power ? 'fa-lightbulb' : 'fa-power-off'} mr-1`}></i>
-                      {device.power ? 'On' : 'Off'}
-                    </div>
-                    
-                    {/* Power Control Buttons - Independent of status */}
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => {
-                          // Clear any existing timeout for this device
-                          const existingTimeout = powerTimeoutRef.current.get(device.id);
-                          if (existingTimeout) {
-                            clearTimeout(existingTimeout);
-                          }
-                          
-                          // Add to pending changes
-                          setPendingPowerChanges(prev => new Set(prev).add(device.id));
-                          
-                          // Debounce the power change
-                          const timeout = setTimeout(() => {
-                            console.log(`Turning ON device ${device.id} (${device.label})`);
-                            powerMutation.mutate({ deviceId: device.id, power: true });
-                            powerTimeoutRef.current.delete(device.id);
-                          }, 100);
-                          
-                          powerTimeoutRef.current.set(device.id, timeout);
-                        }}
-                        disabled={pendingPowerChanges.has(device.id) || device.power}
-                        className={`text-xs px-2 py-1 rounded text-white disabled:opacity-50 ${
-                          device.power 
-                            ? 'bg-emerald-600 cursor-not-allowed' 
-                            : 'bg-emerald-600 hover:bg-emerald-700'
-                        }`}
-                        title="Turn On"
-                      >
-                        <i className="fas fa-lightbulb"></i>
-                      </button>
-                      <button
-                        onClick={() => {
-                          // Clear any existing timeout for this device
-                          const existingTimeout = powerTimeoutRef.current.get(device.id);
-                          if (existingTimeout) {
-                            clearTimeout(existingTimeout);
-                          }
-                          
-                          // Add to pending changes
-                          setPendingPowerChanges(prev => new Set(prev).add(device.id));
-                          
-                          // Debounce the power change
-                          const timeout = setTimeout(() => {
-                            console.log(`Turning OFF device ${device.id} (${device.label})`);
-                            powerMutation.mutate({ deviceId: device.id, power: false });
-                            powerTimeoutRef.current.delete(device.id);
-                          }, 100);
-                          
-                          powerTimeoutRef.current.set(device.id, timeout);
-                        }}
-                        disabled={pendingPowerChanges.has(device.id) || !device.power}
-                        className={`text-xs px-2 py-1 rounded text-white disabled:opacity-50 ${
-                          !device.power 
-                            ? 'bg-slate-600 cursor-not-allowed' 
-                            : 'bg-red-600 hover:bg-red-700'
-                        }`}
-                        title="Turn Off"
-                      >
-                        <i className="fas fa-power-off"></i>
-                      </button>
-                    </div>
-                  </div>
+
                 </div>
               </div>
             ))}
@@ -368,30 +243,7 @@ export default function LightingControls({ devices }: LightingControlsProps) {
         )}
       </div>
       
-      {/* Quick Controls */}
-      <div className="p-4 border-b border-slate-700">
-        <h3 className="text-sm font-medium text-slate-300 mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            onClick={handleAllLightsOn}
-            disabled={powerMutation.isPending}
-            className="bg-emerald-600 hover:bg-emerald-700"
-            size="sm"
-          >
-            <i className="fas fa-lightbulb mr-1"></i>
-            All On
-          </Button>
-          <Button
-            onClick={handleAllLightsOff}
-            disabled={powerMutation.isPending}
-            className="bg-slate-600 hover:bg-slate-700"
-            size="sm"
-          >
-            <i className="fas fa-power-off mr-1"></i>
-            All Off
-          </Button>
-        </div>
-      </div>
+
       
       {/* Color Control */}
       <div className="p-4 border-b border-slate-700">
