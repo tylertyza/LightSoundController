@@ -51,6 +51,20 @@ export default function Soundboard() {
   useEffect(() => {
     setMasterVolume(globalVolume);
   }, [globalVolume, setMasterVolume]);
+
+  // Listen for close panel events from mobile close buttons
+  useEffect(() => {
+    const handleCloseDevicePanel = () => setIsDevicePanelOpen(false);
+    const handleCloseLightingPanel = () => setIsLightingPanelOpen(false);
+    
+    window.addEventListener('closeDevicePanel', handleCloseDevicePanel);
+    window.addEventListener('closeLightingPanel', handleCloseLightingPanel);
+    
+    return () => {
+      window.removeEventListener('closeDevicePanel', handleCloseDevicePanel);
+      window.removeEventListener('closeLightingPanel', handleCloseLightingPanel);
+    };
+  }, []);
   
   useEffect(() => {
     if (!socket) return;

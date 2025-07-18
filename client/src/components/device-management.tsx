@@ -154,10 +154,19 @@ export default function DeviceManagement({ devices, onDiscoverDevices }: DeviceM
   return (
     <div className="w-full md:w-80 bg-slate-800 border-r border-slate-700 flex flex-col h-full">
       <div className="p-3 md:p-4 border-b border-slate-700">
-        <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
-          <i className="fas fa-cog mr-2"></i>
-          Device Management
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
+            <i className="fas fa-cog mr-2"></i>
+            Device Management
+          </h2>
+          {/* Close button for mobile */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('closeDevicePanel'))}
+            className="md:hidden text-slate-400 hover:text-white p-1 touch-manipulation"
+          >
+            <i className="fas fa-times text-lg"></i>
+          </button>
+        </div>
       </div>
       
       {/* Device Discovery Section */}

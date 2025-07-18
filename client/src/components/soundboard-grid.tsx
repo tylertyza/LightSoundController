@@ -29,22 +29,42 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
   const handleItemClick = (item: GridItem) => {
     const itemKey = `${item.type}-${item.id}`;
     
-    // Clear other active items when selecting a new one
-    setPersistentActiveItems(new Set([itemKey]));
-    setActiveItems(prev => new Set(prev).add(itemKey));
-    
-    if (item.type === 'sound') {
-      onSoundButtonClick(item);
-      // Start progress bar for sound effects
-      startProgressBar(itemKey, item.duration || 3000);
-    } else if (item.type === 'scene') {
-      onSceneClick(item);
-      // Scenes are persistent until another is selected
-    } else if (item.type === 'lighting') {
-      onLightingEffectClick(item);
-      // Check if it's a looping effect
-      if (item.duration && item.duration > 0) {
-        startProgressBar(itemKey, item.duration);
+    // For lighting effects, handle toggle logic
+    if (item.type === 'lighting') {
+      const isCurrentlyActive = persistentActiveItems.has(itemKey);
+      
+      if (isCurrentlyActive) {
+        // Turn off this effect
+        setPersistentActiveItems(new Set());
+        setProgressItems(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(itemKey);
+          return newMap;
+        });
+      } else {
+        // Turn on this effect and turn off others
+        setPersistentActiveItems(new Set([itemKey]));
+        setActiveItems(prev => new Set(prev).add(itemKey));
+        
+        onLightingEffectClick(item);
+        
+        // Check if it's a timed effect (not infinite loop)
+        if (item.duration && item.duration > 0 && item.loop !== 0) {
+          startProgressBar(itemKey, item.duration);
+        }
+      }
+    } else {
+      // For sound and scene effects, clear other active items
+      setPersistentActiveItems(new Set([itemKey]));
+      setActiveItems(prev => new Set(prev).add(itemKey));
+      
+      if (item.type === 'sound') {
+        onSoundButtonClick(item);
+        // Start progress bar for sound effects
+        startProgressBar(itemKey, item.duration || 3000);
+      } else if (item.type === 'scene') {
+        onSceneClick(item);
+        // Scenes are persistent until another is selected
       }
     }
     
@@ -131,18 +151,39 @@ export default function SoundboardGrid({ soundButtons, scenes, lightingEffects, 
     // Extract colors from scene data for gradient
     const colors = [];
     
-    // Check for device-specific settings first
-    if (scene.deviceSettings) {
+    // Check for JSON configuration first
+    if (scene.configuration) {
+      try {
+        const config = typeof scene.configuration === 'string' ? JSON.parse(scene.configuration) : scene.configuration;
+        
+        // Check for steps array with color data
+        if (config.steps && Array.isArray(config.steps)) {
+          config.steps.forEach((step: any) => {
+            if (step.color) {
+              colors.push(`from-[${step.color}]`);
+            }
+          });
+        }
+        
+        // Check for direct color property
+        if (config.color && colors.length === 0) {
+          colors.push(`from-[${config.color}]`);
+        }
+      } catch (e) {
+        // If JSON parsing fails, fall back to checking for color property
+        if (scene.configuration?.color) {
+          colors.push(`from-[${scene.configuration.color}]`);
+        }
+      }
+    }
+    
+    // Check for device-specific settings if no JSON colors found
+    if (colors.length === 0 && scene.deviceSettings) {
       Object.values(scene.deviceSettings).forEach((setting: any) => {
         if (setting.color) {
           colors.push(`from-[${setting.color}]`);
         }
       });
-    }
-    
-    // Fallback to configuration color if no device settings
-    if (colors.length === 0 && scene.configuration?.color) {
-      colors.push(`from-[${scene.configuration.color}]`);
     }
     
     // Add default colors for gradient if we have some

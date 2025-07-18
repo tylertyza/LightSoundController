@@ -7,6 +7,72 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import LightingEffects from "./lighting-effects";
 
+// Helper function to generate status circle color based on device state
+const getDeviceStatusColor = (device: Device) => {
+  // If device is off, return black
+  if (!device.power) {
+    return '#000000';
+  }
+  
+  // If device uses temperature/kelvin (white light)
+  if (device.color?.kelvin && device.color.kelvin > 0) {
+    // Convert kelvin to RGB-ish color
+    const kelvin = device.color.kelvin;
+    let r, g, b;
+    
+    if (kelvin <= 2000) {
+      r = 255; g = 147; b = 41;
+    } else if (kelvin <= 3000) {
+      r = 255; g = 197; b = 143;
+    } else if (kelvin <= 4000) {
+      r = 255; g = 214; b = 170;
+    } else if (kelvin <= 5000) {
+      r = 255; g = 228; b = 206;
+    } else {
+      r = 255; g = 243; b = 239;
+    }
+    
+    // Apply brightness
+    const brightness = (device.brightness || 100) / 100;
+    r = Math.round(r * brightness);
+    g = Math.round(g * brightness);
+    b = Math.round(b * brightness);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  
+  // If device uses color (HSV/HSB)
+  if (device.color?.hue !== undefined && device.color?.saturation !== undefined) {
+    const hue = (device.color.hue / 65535) * 360;
+    const saturation = device.color.saturation / 65535;
+    const brightness = ((device.color.brightness || device.brightness || 100) / 65535) * 100;
+    
+    // Convert HSV to RGB
+    const c = (brightness / 100) * saturation;
+    const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+    const m = (brightness / 100) - c;
+    
+    let r, g, b;
+    if (hue < 60) { r = c; g = x; b = 0; }
+    else if (hue < 120) { r = x; g = c; b = 0; }
+    else if (hue < 180) { r = 0; g = c; b = x; }
+    else if (hue < 240) { r = 0; g = x; b = c; }
+    else if (hue < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    
+    r = Math.round((r + m) * 255);
+    g = Math.round((g + m) * 255);
+    b = Math.round((b + m) * 255);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  
+  // Default to dim white if no color info
+  const brightness = (device.brightness || 100) / 100;
+  const gray = Math.round(255 * brightness);
+  return `rgb(${gray}, ${gray}, ${gray})`;
+};
+
 interface LightingControlsProps {
   devices: Device[];
 }
@@ -205,10 +271,19 @@ export default function LightingControls({ devices }: LightingControlsProps) {
   return (
     <div className="w-full md:w-80 bg-slate-800 border-l border-slate-700 flex flex-col h-full">
       <div className="p-3 md:p-4 border-b border-slate-700">
-        <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
-          <i className="fas fa-palette mr-2"></i>
-          Lighting Controls
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base md:text-lg font-semibold text-white flex items-center">
+            <i className="fas fa-palette mr-2"></i>
+            Lighting Controls
+          </h2>
+          {/* Close button for mobile */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('closeLightingPanel'))}
+            className="md:hidden text-slate-400 hover:text-white p-1 touch-manipulation"
+          >
+            <i className="fas fa-times text-lg"></i>
+          </button>
+        </div>
       </div>
       
       {/* Adopted Devices */}
@@ -255,16 +330,21 @@ export default function LightingControls({ devices }: LightingControlsProps) {
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-1 min-w-0">
                     <Checkbox
                       id={`device-${device.id}`}
                       checked={selectedDeviceIds.includes(device.id)}
                       onCheckedChange={(checked) => handleDeviceSelection(device.id, checked as boolean)}
                     />
                     <div className={`w-2 h-2 rounded-full ${device.isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
-                    <span className="text-sm font-medium text-white">{device.label}</span>
+                    <span className="text-sm font-medium text-white truncate">{device.label}</span>
                   </div>
-
+                  {/* Status circle showing current light color/brightness */}
+                  <div 
+                    className="w-4 h-4 rounded-full border border-slate-600 flex-shrink-0 ml-2"
+                    style={{ backgroundColor: getDeviceStatusColor(device) }}
+                    title={`${device.power ? 'On' : 'Off'} - ${device.brightness || 100}% brightness`}
+                  />
                 </div>
               </div>
             ))}
